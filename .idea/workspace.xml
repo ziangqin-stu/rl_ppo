@@ -2,11 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f1bd01da-4a2e-4212-a048-48a60c8d14cd" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/impl_ppo.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/impl_ppo.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/base/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +37,37 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="org.jetbrains.r.configuration.RSettingsProjectConfigurable" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
+  </component>
+  <component name="RunManager">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="impl_ppo" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="$LD_LIBRARY_PATH:$LD_LIBRARY_PATH:/home/ziang/.mujoco/mujoco200/bin:/usr/lib/nvidia-418" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -48,7 +79,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1589976629733</updated>
-      <workItem from="1589976635183" duration="1495000" />
+      <workItem from="1589976635183" duration="4780000" />
     </task>
     <servers />
   </component>
@@ -64,9 +95,47 @@
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
     <state x="1931" y="366" key="#Options/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589978340139" />
-    <state x="1840" y="350" key="SettingsEditor" timestamp="1589978189990">
+    <state x="1696" y="355" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1589981004471">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
-    <state x="1840" y="350" key="SettingsEditor/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589978189990" />
+    <state x="1696" y="355" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589981004471" />
+    <state x="1976" y="462" key="EnvironmentVariablesDialog" timestamp="1589981002737">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1976" y="462" key="EnvironmentVariablesDialog/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589981002737" />
+    <state width="1884" height="390" key="GridCell.Tab.0.bottom" timestamp="1589981585552">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1884" height="390" key="GridCell.Tab.0.bottom/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589981585552" />
+    <state width="1884" height="390" key="GridCell.Tab.0.center" timestamp="1589981585552">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1884" height="390" key="GridCell.Tab.0.center/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589981585552" />
+    <state width="1884" height="390" key="GridCell.Tab.0.left" timestamp="1589981585552">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1884" height="390" key="GridCell.Tab.0.left/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589981585552" />
+    <state width="1884" height="390" key="GridCell.Tab.0.right" timestamp="1589981585552">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1884" height="390" key="GridCell.Tab.0.right/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589981585552" />
+    <state x="1840" y="350" key="SettingsEditor" timestamp="1589979189524">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1840" y="350" key="SettingsEditor/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1589979189524" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/train.py</url>
+          <line>91</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/impl_ppo$main.coverage" NAME="main Coverage Results" MODIFIED="1589981005691" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
   </component>
 </project>

@@ -1,6 +1,7 @@
 from train import train
 from utils import ParamDict
 from xvfbwrapper import Xvfb
+from pyvirtualdisplay import Display
 
 
 def debug_run():
@@ -19,31 +20,31 @@ def debug_run():
     )
     params = ParamDict(
         policy_params=policy_params,
-        iter_num=1e5,  # number of training policy iterations
+        iter_num=5e4,  # number of training policy iterations
         plotting_iters=500,  # interval for logging graphs and policy rollouts
-        seed=12345,
-        env_name='CartPole-v1',
+        seed=123,
+        env_name='InvertedPendulum-v2',
         save_path='./save',
-        prefix='dev_CartPole_1'
+        prefix='dev_InvertedPendulum_1'
     )
 
-    print("=================================")
+    print(">=================================<")
     print("Start Training: alg=PPO, env={}, #update={}".format(params.env_name, params.iter_num))
-    print("---------------------------------")
-    print("Params: {}".format(params))
-    print("---------------------------------")
-    print("Policy-Params: {}".format(params.policy_params))
-    print("=================================")
-    vdisplay = Xvfb(width=1280, height=740)
-    vdisplay.start()
+    print("    ---------------------------------")
+    print("    Params: {}".format(params))
+    print("    ---------------------------------")
+    print("    Policy-Params: {}".format(params.policy_params))
+    print(">=================================<")
+    # vdisplay = Xvfb(width=1280, height=740)
+    display = Display(backend='xvfb')
+    display.start()
     train(params)
-    vdisplay.stop()
-    print("=================================")
+    # vdisplay.stop()
+    display.popen.kill()
+    print(">=================================<")
     print("Training Finished!: alg=PPO, env={}, #update={}".format(params.env_name, params.iter_num))
-    print("=================================")
-
-
+    print(">=================================<")
 
 
 if __name__ == "__main__":
-    debug_run(params)
+    debug_run()

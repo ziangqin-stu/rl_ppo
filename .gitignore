@@ -1,7 +1,9 @@
 # folders
 .idea/
 .save/
+.*.save/
 .runs/
+.*.runs/
 .archieve*/
 # files
 
