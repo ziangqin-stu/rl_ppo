@@ -180,8 +180,6 @@ class CriticNet(nn.Module):
 def get_norm_log_prob(logits, raw_actions, scale):
     mean, cov = logits[0], logits[1]
     action_batch = scale * torch.tanh(raw_actions)
-    # log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6).view(-1) \
-    #        + Normal(mean, cov).log_prob(raw_actions.view(-1))
     log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6) \
                + Normal(mean, cov).log_prob(raw_actions)
     return log_prob

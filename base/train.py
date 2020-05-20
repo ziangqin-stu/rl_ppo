@@ -35,7 +35,7 @@ def rollout(rolloutmem, envs, actor, critic, params):
             old_state = new_state
             if done:
                 break
-            dones[-1] = True
+        dones[-1] = True
         # reformat trajectory step
         old_states, new_states, raw_actions, rewards, dones, log_probs = \
             torch.Tensor(old_states).cuda(), torch.Tensor(new_states).cuda(), torch.Tensor(raw_actions).cuda(), \
@@ -62,13 +62,14 @@ def optimize_step(optimizer, rolloutmem, actor, critic, param):
         = rolloutmem.sample(param.policy_params.batch_size)
     # compute loss factors
     mean, cov = actor.policy_out(old_obs_batch)
-    new_log_prob_batch = get_norm_log_prob([mean, cov], raw_action_batch, actor.scale)
+    mean, cov = mean.view(-1), cov.view(-1)
+    new_log_prob_batch = get_norm_log_prob([mean, cov], raw_action_batch, actor.scale).view(-1)
     ratio = torch.exp(new_log_prob_batch - old_log_prob_batch)
     surr1 = ratio * advantage_batch
     surr2 = torch.clamp(ratio, 1 - param.policy_params.clip_param, 1 + param.policy_params.clip_param) * advantage_batch
     # compute losses
     policy_loss = - torch.mean(torch.min(surr1, surr2))
-    critic_loss = torch.mean(torch.pow(critic.forward(old_obs_batch) - value_batch.view(-1), 2))  # MSE loss
+    critic_loss = torch.mean(torch.pow(critic.forward(old_obs_batch).view(-1) - value_batch, 2))  # MSE loss
     entropy_loss = - torch.mean(get_entropy([mean, cov]))
     loss = policy_loss + param.policy_params.critic_coef * critic_loss + param.policy_params.entropy_coef * entropy_loss
     # gradient descent

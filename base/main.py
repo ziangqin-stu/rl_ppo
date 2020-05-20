@@ -23,8 +23,10 @@ def debug_run():
         iter_num=5e4,  # number of training policy iterations
         plotting_iters=500,  # interval for logging graphs and policy rollouts
         seed=123,
+        # env_name='InvertedDoublePendulum-v2',
         env_name='InvertedPendulum-v2',
         save_path='./save',
+        # prefix='dev_InvertedDoublePendulum_1'
         prefix='dev_InvertedPendulum_1'
     )
 
