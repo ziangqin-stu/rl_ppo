@@ -45,8 +45,6 @@ def rollout(rolloutmem, envs, actor, critic, params):
         for t in range(len(gae_deltas)):
             advantages.append(get_advantage(t, gae_deltas, params.policy_params.discount, params.policy_params.lambd))
         advantages = torch.Tensor(advantages)
-        # advantages = torch.Tensor([get_advantage(step, gae_deltas, params.policy_params.discount, params.policy_params.lambd)
-        #               for step in range(len(gae_deltas))])
         values = get_values(rewards, params.policy_params.discount)
         # store epoch
         rolloutmem.append(old_states, new_states, raw_actions, rewards, dones, log_probs, advantages, values)

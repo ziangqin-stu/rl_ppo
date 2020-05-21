@@ -47,6 +47,14 @@ def get_advantage(horizon, gae_deltas, discount, lambd):
     return advantage.item()
 
 
+def get_advantage_new(deltas, discount, lambd):
+    advantage = [0 for i in range(len(deltas))]
+    advantage[-1] = deltas[-1]
+    for i in reversed(range(len(deltas) - 1)):
+        advantage[i] = lambd * discount * advantage[i + 1] + deltas[i]
+    return advantage
+
+
 def get_values(rewards, discount):
     values = torch.zeros(len(rewards))
     for step in range(len(rewards)):
