@@ -24,13 +24,13 @@ class RolloutMemory:
         self.capacity = int(capacity)
         self.old_obs_mem = torch.zeros(capacity, *obs_dim).cuda() if obs_dim[0] > 1 else torch.zeros(capacity).cuda()
         self.new_obs_mem = torch.zeros(capacity, *obs_dim).cuda() if obs_dim[0] > 1 else torch.zeros(capacity).cuda()
-        self.action_mem = torch.zeros(capacity, *act_dim).cuda() if act_dim[0] > 1 else torch.zeros(capacity).cuda()
+        self.action_mem = torch.zeros(capacity, *act_dim).cuda()
         self.reward_mem = torch.zeros(capacity).cuda()
         self.done_mem = torch.zeros(capacity).cuda()
-        self.log_prob_mem = torch.zeros(capacity, *act_dim).cuda() if act_dim[0] > 1 else torch.zeros(capacity).cuda()
-        self.advantage_mem = torch.zeros(capacity).cuda()
-        self.value_mem = torch.zeros(capacity).cuda()
-        self.epochs_len = torch.zeros(capacity).cuda()
+        self.log_prob_mem = torch.zeros(capacity, *act_dim).cuda()
+        self.advantage_mem = torch.zeros(capacity, 1).cuda()
+        self.value_mem = torch.zeros(capacity, 1).cuda()
+        self.epochs_len = torch.zeros(capacity, 1).cuda()
 
     def reset(self):
         self.__init__(self.capacity, self.env_name)

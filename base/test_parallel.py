@@ -104,82 +104,13 @@ class Actor(nn.Module):
         return mean, cov
 
 
-# @ray.remote
-# class RolloutMemory:
-#     """
-#     Test:
-#         - check data dimension
-#         - check data type
-#         - check data device
-#         - check data value
-#     """
-#
-#     def __init__(self, capacity, env_name):
-#         # environment specific parameters
-#         self.env = gen_env(env_name)
-#         action = self.env.action_space.sample()
-#         act_dim = action.shape if isinstance(action, np.ndarray) else (1,)
-#         obs_dim = self.env.observation_space.shape
-#         # memories
-#         self.env_name = env_name
-#         self.offset = 0
-#         self.capacity = int(capacity)
-#         self.old_obs_mem = torch.zeros(capacity, *obs_dim).cuda() if obs_dim[0] > 1 else torch.zeros(capacity).cuda()
-#         self.new_obs_mem = torch.zeros(capacity, *obs_dim).cuda() if obs_dim[0] > 1 else torch.zeros(capacity).cuda()
-#         self.action_mem = torch.zeros(capacity, *act_dim).cuda() if act_dim[0] > 1 else torch.zeros(capacity).cuda()
-#         self.reward_mem = torch.zeros(capacity).cuda()
-#         self.done_mem = torch.zeros(capacity).cuda()
-#         self.log_prob_mem = torch.zeros(capacity, *act_dim).cuda() if act_dim[0] > 1 else torch.zeros(capacity).cuda()
-#         self.advantage_mem = torch.zeros(capacity).cuda()
-#         self.value_mem = torch.zeros(capacity).cuda()
-#         self.epochs_len = torch.zeros(capacity).cuda()
-#
-#     def reset(self):
-#         self.__init__(self.capacity, self.env_name)
-#
-#     def append(self, old_obs_batch, new_obs_batch, action_batch, reward_batch, done_batch,
-#                log_prob_batch, advantage_batch, value_batch):
-#         # insert segment boundary
-#         batch_size = len(old_obs_batch)
-#         start, end = self.offset, self.offset + batch_size
-#         # insert batches to memories
-#         self.old_obs_mem[start: end] = old_obs_batch[:]
-#         self.new_obs_mem[start: end] = new_obs_batch[:]
-#         self.action_mem[start: end] = action_batch[:]
-#         self.reward_mem[start: end] = reward_batch[:]
-#         self.done_mem[start: end] = done_batch[:]
-#         self.log_prob_mem[start: end] = log_prob_batch[:]
-#         self.advantage_mem[start: end] = advantage_batch[:]
-#         self.value_mem[start: end] = value_batch[:]
-#         self.offset += batch_size
-#
-#     def sample(self, batch_size):
-#         out = np.random.choice(self.offset, batch_size, replace=False)
-#         return (
-#             self.old_obs_mem[out],
-#             self.new_obs_mem[out],
-#             self.action_mem[out],
-#             self.reward_mem[out],
-#             self.done_mem[out],
-#             self.log_prob_mem[out],
-#             self.advantage_mem[out],
-#             self.value_mem[out],
-#         )
-#
-#     def compute_epoch_length(self):
-#         done_indexes = (self.done_mem == 1).nonzero()
-#         self.epochs_len = torch.Tensor([done_indexes[i] - done_indexes[i - 1] if i > 0 else done_indexes[0]
-#                                         for i in reversed(range(len(done_indexes)))])
-#         return self.epochs_len
-
-
 @ray.remote
 def gen_env(env_name):
     return gym.make(env_name)
 
 
 @ray.remote
-def rollout_single_step_parallel(task_id, env_name, actor, horizon, env=1):
+def rollout_single_step_parallel(task_id, env_name, actor, horizon):
     time_1 = time.time()
     env = gym.make(env_name)
     obs = env.reset()
@@ -209,7 +140,6 @@ def rollout_single_step(task_id, env, actor, horizon):
 
 
 def parallel_rollout(env_name, env_number, horizon):
-    envs = [gym.make(env_name) for _ in range(env_number)]
     actors = [Actor(4, 1, 32, 3) for _ in range(env_number)]
     time_start = time.time()
     data = ray.get(
@@ -308,8 +238,8 @@ def rollout_sim_single_step_parallel(task_id, env_name, actor, horizon):
 
 
 def parallel_rollout_sim(env_name, env_number, horizon):
-    actors = [Actor(4, 1, 32, 3) for _ in range(env_number)]
-    critic = CriticNet(4, 32)
+    actors = [Actor(4, 1, 512, 3) for _ in range(env_number)]
+    critic = CriticNet(4, 512)
     rolloutmem = RolloutMemory(env_number * horizon, env_name)
     episodes_rewards = []
     time_start = time.time()
@@ -325,8 +255,9 @@ def parallel_rollout_sim(env_name, env_number, horizon):
         values = get_values(rewards, 0.99)
         rolloutmem.append(old_states, new_states, raw_actions, rewards, dones, log_probs, advantages, values)
         episodes_rewards.append(episode_reward)
-    print("parallel_time: {}\ndata_len: {}\navgR: {:.3f}\nsaved_step_num: {}\n\n"
-          .format(time_end - time_start, len(data), torch.mean(torch.Tensor(episodes_rewards)), rolloutmem.offset))
+    time_reformat = time.time()
+    print("parallel_time: {}, reformat_time: {:.3f}\ndata_len: {}\navgR: {:.3f}\nsaved_step_num: {}\n\n"
+          .format(time_end - time_start, time_reformat - time_end, len(data), torch.mean(torch.Tensor(episodes_rewards)), rolloutmem.offset))
     return torch.mean(torch.Tensor(episodes_rewards)), time_end - time_start
 
 
@@ -370,12 +301,13 @@ def serial_rollout_sim(env_name, env_number, horizon):
 
 if __name__ == "__main__":
     # ray.init(log_to_driver=False)
-    ray.init()
+    ray.init(logging_level='ERROR')
     # parallel_work(50)
     # serial_work(10)
     # parallel_rollout('InvertedPendulum-v2', 50, 80)
     # serial_rollout('InvertedPendulum-v2', 50, 80)
     # loop_rollout('InvertedPendulum-v2', 50, 80)
     # subprocenv_rollout('InvertedPendulum-v2', 50, 10)
-    parallel_rollout_sim('InvertedPendulum-v2', 50, 1000)
+    parallel_rollout_sim('InvertedPendulum-v2', 50, 200)
+    # parallel_rollout_sim('InvertedDoublePendulum-v2', 50, 200)
     # serial_rollout_sim('InvertedPendulum-v2', 100, 160)

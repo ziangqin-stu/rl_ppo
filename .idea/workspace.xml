@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="937f871a-24da-4ac0-924c-c34e9e3b6a62" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/test/test_env.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/networks.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/networks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/rolloutmemory.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/rolloutmemory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/test_parallel.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/test_parallel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1cDo8jJk9vBUXNhF1J8FxSD2UQn" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="true" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunManager" selected="Python.test_env">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="impl_ppo" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="$LD_LIBRARY_PATH:/home/ziang/.mujoco/mujoco200/bin:/usr/lib/nvidia-418" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="rolloutmemory" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="impl_ppo" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base/rolloutmemory.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="test_env" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="impl_ppo" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="LD_LIBRARY_PATH" value="$LD_LIBRARY_PATH:/home/ziang/.mujoco/mujoco200/bin:/usr/lib/nvidia-418" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test/test_env.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="train" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="impl_ppo" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base/train.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="utils" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="impl_ppo" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/base" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/base/utils.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.main" />
+      <item itemvalue="Python.train" />
+      <item itemvalue="Python.utils" />
+      <item itemvalue="Python.rolloutmemory" />
+      <item itemvalue="Python.test_env" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.test_env" />
+        <item itemvalue="Python.main" />
+        <item itemvalue="Python.train" />
+        <item itemvalue="Python.rolloutmemory" />
+        <item itemvalue="Python.utils" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="937f871a-24da-4ac0-924c-c34e9e3b6a62" name="Default Changelist" comment="" />
+      <created>1590072367980</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1590072367980</updated>
+      <workItem from="1590072375739" duration="40800000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="1834" y="358" key="#Deployment" timestamp="1590144571652">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1834" y="358" key="#Deployment/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590144571652" />
+    <state x="1834" y="358" key="#Options" timestamp="1590110193897">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1834" y="358" key="#Options/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590110193897" />
+    <state x="1864" y="379" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1590155271174">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1864" y="379" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155271174" />
+    <state x="2144" y="486" key="EnvironmentVariablesDialog" timestamp="1590155250528">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="2144" y="486" key="EnvironmentVariablesDialog/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155250528" />
+    <state width="1923" height="477" key="GridCell.Tab.0.bottom" timestamp="1590155307543">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.0.bottom/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307543" />
+    <state width="1923" height="477" key="GridCell.Tab.0.center" timestamp="1590155307543">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.0.center/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307543" />
+    <state width="1923" height="477" key="GridCell.Tab.0.left" timestamp="1590155307543">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.0.left/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307543" />
+    <state width="1923" height="477" key="GridCell.Tab.0.right" timestamp="1590155307543">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.0.right/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307543" />
+    <state width="1923" height="477" key="GridCell.Tab.1.bottom" timestamp="1590155307544">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.1.bottom/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307544" />
+    <state width="1923" height="477" key="GridCell.Tab.1.center" timestamp="1590155307544">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.1.center/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307544" />
+    <state width="1923" height="477" key="GridCell.Tab.1.left" timestamp="1590155307543">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.1.left/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307543" />
+    <state width="1923" height="477" key="GridCell.Tab.1.right" timestamp="1590155307544">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="1923" height="477" key="GridCell.Tab.1.right/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590155307544" />
+    <state x="1911" y="366" key="SettingsEditor" timestamp="1590119710877">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1911" y="366" key="SettingsEditor/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590119710877" />
+    <state width="958" height="689" key="XDebugger.FullValuePopup" timestamp="1590152781214">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state width="958" height="689" key="XDebugger.FullValuePopup/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590152781214" />
+    <state x="856" y="495" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1590151702711">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="856" y="495" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590151702711" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/rolloutmemory.py</url>
+          <line>68</line>
+          <option name="timeStamp" value="75" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/test/test_env.py</url>
+          <line>3</line>
+          <option name="timeStamp" value="77" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/main.py</url>
+          <line>8</line>
+          <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/main.py</url>
+          <line>12</line>
+          <option name="timeStamp" value="79" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/main.py</url>
+          <line>18</line>
+          <option name="timeStamp" value="82" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/main.py</url>
+          <line>16</line>
+          <option name="timeStamp" value="83" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/train.py</url>
+          <line>169</line>
+          <option name="timeStamp" value="84" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/base/main.py</url>
+          <line>17</line>
+          <option name="timeStamp" value="91" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="torch.min(surr1, surr2)" language="Python" />
+        <watch expression="critic.forward(old_obs_batch) - value_batch" language="Python" />
+        <watch expression="torch.pow(critic.forward(old_obs_batch) - value_batch, 2)" language="Python" />
+        <watch expression="get_entropy([mean, cov])" language="Python" />
+      </configuration>
+    </watches-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/impl_ppo$rolloutmemory.coverage" NAME="rolloutmemory Coverage Results" MODIFIED="1590148892375" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
+    <SUITE FILE_PATH="coverage/impl_ppo$test_env.coverage" NAME="test_env Coverage Results" MODIFIED="1590155273159" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test" />
+    <SUITE FILE_PATH="coverage/impl_ppo$train.coverage" NAME="train Coverage Results" MODIFIED="1590150873532" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
+    <SUITE FILE_PATH="coverage/impl_ppo$test_parallel.coverage" NAME="test_parallel Coverage Results" MODIFIED="1590110155521" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
+    <SUITE FILE_PATH="coverage/impl_ppo$main.coverage" NAME="main Coverage Results" MODIFIED="1590153916795" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
+    <SUITE FILE_PATH="coverage/impl_ppo$utils.coverage" NAME="utils Coverage Results" MODIFIED="1590127229702" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/base" />
+  </component>
+</project>
