@@ -7,7 +7,7 @@ import gym
 import multiprocessing as mp
 import threading
 
-from utils import gen_env, gen_actor, gen_critic, count_model_params, get_advantage, get_advantage_new, get_values, \
+from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, get_values, \
     get_entropy, log_policy_rollout, AverageMeter
 from rolloutmemory import RolloutMemory
 from networks import get_norm_log_prob
@@ -23,7 +23,7 @@ def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
     for step in range(horizon):
         # interact with environment
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(torch.Tensor(old_obs)).cuda())
-        new_obs, reward, done, info = env.step(action.cpu())
+        new_obs, reward, done, info = env.step(action)
         # record trajectory step
         old_states.append(old_obs)
         new_states.append(new_obs)
@@ -53,12 +53,12 @@ def rollout_serial(rolloutmem, envs, actor, critic, params):
         for step in range(params.policy_params.horizon):
             # act one step in current environment
             action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
-            new_state, reward, done, info = env.step(action.cpu())
+            new_state, reward, done, info = env.step(action.cpu() if hasattr(action, 'cpu') else action)
             time.sleep(.002)  # check this issue: https://github.com/openai/mujoco-py/issues/340
             # record trajectory step
             old_states.append(old_state)
             new_states.append(new_state)
-            raw_actions.append(raw_action)
+            raw_actions.append(raw_action.view(-1))
             rewards.append(reward)
             dones.append(done)
             log_probs.append(log_prob)
@@ -150,8 +150,9 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     old_obs_batch, _, raw_action_batch, reward_batch, done_batch, old_log_prob_batch, advantage_batch, value_batch \
         = rolloutmem.sample(params.policy_params.batch_size)
     # compute loss factors
-    mean, cov = actor.policy_out(old_obs_batch)
-    new_log_prob_batch = get_norm_log_prob([mean, cov], raw_action_batch, actor.scale)
+    logits = actor.policy_out(old_obs_batch)
+    new_log_prob_batch = get_norm_log_prob(logits, raw_action_batch, actor.scale, dist_type=get_dist_type(params.env_name))
+    assert len(new_log_prob_batch) > 1, '    >>> [optimize_step -> new_log_prob_batch], Wrong Dimension'
     ratio = torch.exp(new_log_prob_batch - old_log_prob_batch)
     surr1 = ratio * advantage_batch
     surr2 = torch.clamp(ratio, 1 - params.policy_params.clip_param,
@@ -159,7 +160,7 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     # compute losses
     policy_loss = - torch.mean(torch.min(surr1, surr2))
     critic_loss = torch.mean(torch.pow(critic.forward(old_obs_batch) - value_batch, 2))  # MSE loss
-    entropy_loss = - torch.mean(get_entropy([mean, cov]))
+    entropy_loss = - torch.mean(get_entropy(logits))
     loss = policy_loss \
            + params.policy_params.critic_coef * critic_loss \
            + params.policy_params.entropy_coef * entropy_discount * entropy_loss
@@ -184,7 +185,8 @@ def train(params):
     for i in range(len(envs)): envs[i].seed(seed=params.seed + i)
     optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()),
                                  lr=params.policy_params.learning_rate)
-    ray.init(log_to_driver=False, local_mode=False)
+    # ray.init(log_to_driver=False, local_mode=False)
+    ray.init()
     # logger instantiation
     tb = SummaryWriter()
     rollout_time, update_time = AverageMeter(), AverageMeter()

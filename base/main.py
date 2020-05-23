@@ -6,29 +6,30 @@ from pyvirtualdisplay import Display
 
 def debug_run():
     policy_params = ParamDict(
-        hidden_dim=512,  # dimension of the hidden state in actor network
+        hidden_dim=64,  # dimension of the hidden state in actor network
         learning_rate=1e-5,  # learning rate of policy update
         discount=0.99,  # discount factor
         lambd=0.95,
-        entropy_coef=0.35,  # hyper-parameter to vary the contribution of entropy loss
+        entropy_coef=0.01,  # hyper-parameter to vary the contribution of entropy loss
         critic_coef=0.5,  # Coefficient of critic loss when weighted against actor loss
         clip_param=0.2,
         envs_num=50,
-        horizon=200,
+        horizon=500,
         batch_size=64,  # batch size for policy update
         epochs_num=200,  # number of epochs per policy update
     )
     params = ParamDict(
         policy_params=policy_params,
-        iter_num=1e4,  # number of training policy iterations
-        plotting_iters=500,  # interval for logging graphs and policy rollouts
+        iter_num=2e3,  # number of training policy iterations
+        plotting_iters=200,  # interval for logging graphs and policy rollouts
         seed=123,
         # parallel_check_num=100,
         parallel=True,
-        reducing_entro_loss=True,
-        env_name='Humanoid-v2',
+        reducing_entro_loss=False,
+        env_name='CartPole-v1',
+        # env_name='Hopper-v2',
         save_path='./save',
-        prefix='dev_Humanoid_serial_2'
+        prefix='dev_CartPole_parallel_1'
     )
 
     print(">=================================<")

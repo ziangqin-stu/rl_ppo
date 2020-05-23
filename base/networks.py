@@ -133,8 +133,8 @@ class ActorContinueNet(nn.Module):
         dist = Normal(mean, cov)
         raw_action = dist.sample()
         action = self.scale * torch.tanh(raw_action)
-        log_prob = get_norm_log_prob([mean, cov], raw_action, self.scale).view(-1)
-        return action, log_prob, raw_action
+        log_prob = get_norm_log_prob([mean, cov], raw_action, self.scale, dist_type='Normal').view(-1)
+        return action.cpu(), log_prob, raw_action
 
     def policy_out(self, state):
         mean, cov = self.forward(state)
@@ -187,7 +187,7 @@ class ActorDiscreteNet(nn.Module):
         self.fc3 = nn.Linear(hidden_dim, hidden_dim)
         self.fc4 = nn.Linear(hidden_dim, hidden_dim)
         self.fc5 = nn.Linear(hidden_dim, output_size)
-        self.scale = torch.tensor([action_scale]).float().cuda()
+        self.scale = torch.tensor([action_scale]).cuda()
         # initialize network parameters
         nn.init.orthogonal_(self.fc1.weight)
         nn.init.orthogonal_(self.fc2.weight)
@@ -197,18 +197,18 @@ class ActorDiscreteNet(nn.Module):
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
-        x = torch.relu(self.fc2(state))
-        x = torch.relu(self.fc3(state))
-        x = torch.relu(self.fc4(state))
-        x = self.fc5(state)
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        x = torch.relu(self.fc4(x))
+        x = self.fc5(x)
         return x
 
     def gen_action(self, state):
         logits = self.forward(state)
-        dist = Categorical(logits)
+        dist = Categorical(logits=logits)
         raw_action = dist.sample()
-        action = self.scale * torch.tanh(raw_action)
-        log_prob = get_norm_log_prob(logits, raw_action, self.scale, dist_type='Categorical').view(-1)
+        action = int(self.scale * raw_action)
+        log_prob = get_norm_log_prob(logits, raw_action, self.scale, dist_type='Categorical')
         return action, log_prob, raw_action
 
     def policy_out(self, state):
@@ -217,11 +217,15 @@ class ActorDiscreteNet(nn.Module):
 
 
 def get_norm_log_prob(logits, raw_actions, scale, dist_type='Normal'):
+    log_prob = None
     if dist_type is 'Normal':
         mean, cov = logits[0], logits[1]
         action_batch = scale * torch.tanh(raw_actions)
         log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6) \
                    + Normal(mean, cov).log_prob(raw_actions)
     elif dist_type is 'Categorical':
-        log_prob = []
+        # Categorical.log_prob accepts tight-dimension data, return 1-dimensional tensor even received batch input
+        log_prob = Categorical(logits=logits).log_prob(raw_actions.view(-1))
+        if log_prob.shape[0] > 1:
+            log_prob = log_prob[:, None]
     return log_prob

@@ -1,7 +1,7 @@
 import torch, gym, time, os
 from gym.wrappers import Monitor
 from torch.distributions.normal import Normal
-from networks import ActorContinueNet, CriticNet
+from networks import ActorContinueNet, ActorDiscreteNet, CriticNet
 from data import envnames_minigrid, envnames_classiccontrol, envnames_mujoco
 
 
@@ -19,6 +19,10 @@ def gen_actor(env_name, hidden_dim):
         return ActorContinueNet(input_size=env.observation_space.shape[0],
                                 output_size=env.action_space.shape[0],
                                 hidden_dim=hidden_dim, action_scale=action_scale).cuda()
+    elif env_name in envnames_classiccontrol:
+        return ActorDiscreteNet(input_size=env.observation_space.shape[0],
+                                output_size=env.action_space.n,
+                                hidden_dim=hidden_dim, action_scale=action_scale).cuda()
     else:
         raise NotImplementedError
 
@@ -27,6 +31,9 @@ def gen_critic(env_name, hidden_dim):
     # environment specific parameters
     env = gen_env(env_name)
     if env_name in envnames_mujoco:
+        return CriticNet(input_size=env.observation_space.shape[0],
+                         hidden_dim=hidden_dim).cuda()
+    elif env_name in envnames_classiccontrol:
         return CriticNet(input_size=env.observation_space.shape[0],
                          hidden_dim=hidden_dim).cuda()
     else:
@@ -70,6 +77,15 @@ def get_entropy(logits):
     mean, cov = logits[0], logits[1]
     entropy = Normal(mean, cov).entropy()
     return entropy
+
+
+def get_dist_type(env_name):
+    if env_name in envnames_classiccontrol + envnames_minigrid:
+        return 'Categorical'
+    elif env_name in envnames_mujoco:
+        return 'Normal'
+    else:
+        raise NotImplementedError
 
 
 def log_policy_rollout(params, actor, env, video_name):

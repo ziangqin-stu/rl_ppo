@@ -1,4 +1,4 @@
 import gym
 
-env = gym.make('Hopper-v2')
+env = gym.make('CartPole-v1')
 x = 1
