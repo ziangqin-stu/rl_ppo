@@ -1,12 +1,18 @@
 import torch, gym, time, os
 from gym.wrappers import Monitor
+from gym_minigrid.wrappers import *
 from torch.distributions.normal import Normal
-from networks import ActorContinueNet, ActorDiscreteNet, CriticNet
+from torch.distributions.categorical import Categorical
+from networks import ActorContinueFC, ActorDiscreteFC, CriticFC, ActorDiscreteCNN, CriticCNN
 from data import envnames_minigrid, envnames_classiccontrol, envnames_mujoco
 
 
 def gen_env(env_name):
     env = gym.make(env_name)
+    if env_name in envnames_minigrid:
+        # use wrapper class to make RGB pixels as observation
+        env = RGBImgPartialObsWrapper(env)
+        env = ImgObsWrapper(env)
     return env
 
 
@@ -16,13 +22,17 @@ def gen_actor(env_name, hidden_dim):
     action_scale = env.action_space.high if hasattr(env.action_space, 'high') else 1
     # generate actor by environment name
     if env_name in envnames_mujoco:
-        return ActorContinueNet(input_size=env.observation_space.shape[0],
-                                output_size=env.action_space.shape[0],
-                                hidden_dim=hidden_dim, action_scale=action_scale).cuda()
+        return ActorContinueFC(input_size=env.observation_space.shape[0],
+                               output_size=env.action_space.shape[0],
+                               hidden_dim=hidden_dim, action_scale=action_scale).cuda()
     elif env_name in envnames_classiccontrol:
-        return ActorDiscreteNet(input_size=env.observation_space.shape[0],
+        return ActorDiscreteFC(input_size=env.observation_space.shape[0],
+                               output_size=env.action_space.n,
+                               hidden_dim=hidden_dim, action_scale=action_scale).cuda()
+    elif env_name in envnames_minigrid:
+        return ActorDiscreteCNN(input_shape=env.observation_space.shape,
                                 output_size=env.action_space.n,
-                                hidden_dim=hidden_dim, action_scale=action_scale).cuda()
+                                action_scale=action_scale).cuda()
     else:
         raise NotImplementedError
 
@@ -31,11 +41,13 @@ def gen_critic(env_name, hidden_dim):
     # environment specific parameters
     env = gen_env(env_name)
     if env_name in envnames_mujoco:
-        return CriticNet(input_size=env.observation_space.shape[0],
-                         hidden_dim=hidden_dim).cuda()
+        return CriticFC(input_size=env.observation_space.shape[0],
+                        hidden_dim=hidden_dim).cuda()
     elif env_name in envnames_classiccontrol:
-        return CriticNet(input_size=env.observation_space.shape[0],
-                         hidden_dim=hidden_dim).cuda()
+        return CriticFC(input_size=env.observation_space.shape[0],
+                        hidden_dim=hidden_dim).cuda()
+    elif env_name in envnames_minigrid:
+        return CriticCNN(input_shape=env.observation_space.shape).cuda()
     else:
         raise NotImplementedError
 
@@ -73,9 +85,12 @@ def get_values(rewards, discount):
     return values
 
 
-def get_entropy(logits):
-    mean, cov = logits[0], logits[1]
-    entropy = Normal(mean, cov).entropy()
+def get_entropy(logits, dist_type):
+    if dist_type is 'Normal':
+        mean, cov = logits[0], logits[1]
+        entropy = Normal(mean, cov).entropy()
+    else:
+        entropy = Categorical(logits=logits).entropy()
     return entropy
 
 
@@ -102,7 +117,7 @@ def log_policy_rollout(params, actor, env, video_name):
     while not done:
         action = actor.gen_action(torch.tensor(observation, dtype=torch.float32).cuda())[0]
         action_list.append(action)
-        observation, reward, done, info = env.step(action.cpu())
+        observation, reward, done, info = env.step(action)
         episode_reward += reward
         episode_length += 1
     print("Action Series: {}".format(action_list))

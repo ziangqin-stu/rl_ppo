@@ -1,16 +1,17 @@
+import copy
+import os
+import time
+
+import numpy as np
+import ray
 import torch
 from torch.utils.tensorboard import SummaryWriter
-import time
-import ray
-import copy
-import gym
-import multiprocessing as mp
-import threading
 
-from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, get_values, \
-    get_entropy, log_policy_rollout, AverageMeter
-from rolloutmemory import RolloutMemory
 from networks import get_norm_log_prob
+from rolloutmemory import RolloutMemory
+from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
+    get_values, \
+    get_entropy, log_policy_rollout, AverageMeter
 
 
 @ray.remote(num_gpus=3)
@@ -152,7 +153,7 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     # compute loss factors
     logits = actor.policy_out(old_obs_batch)
     new_log_prob_batch = get_norm_log_prob(logits, raw_action_batch, actor.scale, dist_type=get_dist_type(params.env_name))
-    assert len(new_log_prob_batch) > 1, '    >>> [optimize_step -> new_log_prob_batch], Wrong Dimension'
+    assert len(new_log_prob_batch.shape) > 1, '    >>> [optimize_step -> new_log_prob_batch], Wrong Dimension'
     ratio = torch.exp(new_log_prob_batch - old_log_prob_batch)
     surr1 = ratio * advantage_batch
     surr2 = torch.clamp(ratio, 1 - params.policy_params.clip_param,
@@ -160,7 +161,7 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     # compute losses
     policy_loss = - torch.mean(torch.min(surr1, surr2))
     critic_loss = torch.mean(torch.pow(critic.forward(old_obs_batch) - value_batch, 2))  # MSE loss
-    entropy_loss = - torch.mean(get_entropy(logits))
+    entropy_loss = - torch.mean(get_entropy(logits, get_dist_type(params.env_name)))
     loss = policy_loss \
            + params.policy_params.critic_coef * critic_loss \
            + params.policy_params.entropy_coef * entropy_discount * entropy_loss
@@ -178,6 +179,9 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
 def train(params):
     # algorithm ingredients instantiation
     torch.manual_seed(params.seed)
+    torch.cuda.manual_seed_all(params.seed)
+    np.random.seed(params.seed)
+    # os.environ['PYTHONHASHSEED'] = str(params.seed)
     actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
     critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
     rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
@@ -224,8 +228,9 @@ def train(params):
         print('it {}: avgR: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
               .format(iteration, mean_iter_reward, rollout_time.val, update_time.val))
         # save rollout video
-        if iteration % int(params.plotting_iters) == 0 and iteration > 0:
+        if iteration % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
             log_policy_rollout(params, actor, envs[0], 'iter-{}'.format(iteration))
     # save rollout videos
-    for i in range(3):
-        log_policy_rollout(params, actor, envs[0], 'final-{}'.format(i))
+    if params.log_video:
+        for i in range(3):
+            log_policy_rollout(params, actor, envs[0], 'final-{}'.format(i))

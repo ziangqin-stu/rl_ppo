@@ -2,6 +2,7 @@
   <dictionary name="HOME">
     <words>
       <w>classiccontrol</w>
+      <w>conv</w>
       <w>dones</w>
       <w>envnames</w>
       <w>logits</w>
@@ -12,6 +13,7 @@
       <w>rolloutmem</w>
       <w>rollouts</w>
       <w>subprocenv</w>
+      <w>unbox</w>
       <w>vdisplay</w>
     </words>
   </dictionary>
