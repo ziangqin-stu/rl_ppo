@@ -1,10 +1,13 @@
-import torch, gym, time, os
+import os
+import time
+import torch
 from gym.wrappers import Monitor
 from gym_minigrid.wrappers import *
-from torch.distributions.normal import Normal
 from torch.distributions.categorical import Categorical
-from networks import ActorContinueFC, ActorDiscreteFC, CriticFC, ActorDiscreteCNN, CriticCNN
+from torch.distributions.normal import Normal
+
 from data import envnames_minigrid, envnames_classiccontrol, envnames_mujoco
+from networks import ActorContinueFC, ActorDiscreteFC, CriticFC, ActorDiscreteCNN, CriticCNN
 
 
 def gen_env(env_name):
@@ -68,6 +71,7 @@ def get_advantage(horizon, gae_deltas, discount, lambd):
 
 def get_advantage_new(deltas, discount, lambd):
     advantage = [0 for i in range(len(deltas))]
+    advantage = torch.zeros(deltas.shape).cuda()
     advantage[-1] = deltas[-1]
     for i in reversed(range(len(deltas) - 1)):
         advantage[i] = lambd * discount * advantage[i + 1] + deltas[i]
@@ -75,7 +79,8 @@ def get_advantage_new(deltas, discount, lambd):
 
 
 def get_values(rewards, discount):
-    values = torch.zeros(len(rewards))
+    # batch success, not tested on single
+    values = torch.zeros(rewards.shape).cuda()
     for step in range(len(rewards)):
         index = len(rewards) - step - 1
         if step == 0:
@@ -83,6 +88,10 @@ def get_values(rewards, discount):
         else:
             values[index] = rewards[index] + discount * values[index + 1]
     return values
+
+
+def get_values_batch(rewards, discount):
+    pass
 
 
 def get_entropy(logits, dist_type):

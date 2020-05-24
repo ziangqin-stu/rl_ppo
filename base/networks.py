@@ -135,7 +135,7 @@ class ActorContinueFC(nn.Module):
         dist = Normal(mean, cov)
         raw_action = dist.sample()
         action = self.scale * torch.tanh(raw_action)
-        log_prob = get_norm_log_prob([mean, cov], raw_action, self.scale, dist_type='Normal').view(-1)
+        log_prob = get_norm_log_prob([mean, cov], raw_action, self.scale, dist_type='Normal')
         return action.cpu(), log_prob, raw_action
 
     def policy_out(self, state):
@@ -177,7 +177,8 @@ class CriticFC(nn.Module):
         return x
 
     def gae_delta(self, old_state, new_state, rewards, discount):
-        return rewards + discount * self.forward(new_state).view(-1) - self.forward(old_state).view(-1)
+        # return rewards + discount * self.forward(new_state).view(-1) - self.forward(old_state).view(-1)
+        return rewards + discount * self.forward(new_state).squeeze(-1) - self.forward(old_state).squeeze(-1)
 
 
 class ActorDiscreteFC(nn.Module):

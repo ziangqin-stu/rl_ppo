@@ -1,6 +1,7 @@
 import copy
 import os
 import time
+import random
 
 import numpy as np
 import ray
@@ -16,14 +17,14 @@ from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_par
 
 @ray.remote(num_gpus=3)
 def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
-    # time_1 = time.time()
     # initialize logger
     old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward = [], [], [], [], [], [], [], 0.
     # collect episode
     old_obs = env.reset()
     for step in range(horizon):
         # interact with environment
-        action, log_prob, raw_action = actor.gen_action(torch.Tensor(torch.Tensor(old_obs)).cuda())
+        action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_obs).cuda())
+        assert (env.action_space.low < np.array(action)).all() and (np.array(action) < env.action_space.high).all()
         new_obs, reward, done, info = env.step(action)
         # record trajectory step
         old_states.append(old_obs)
@@ -31,15 +32,13 @@ def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
         raw_actions.append(raw_action.view(-1))
         rewards.append(reward)
         dones.append(done)
-        log_probs.append(log_prob)
+        log_probs.append(log_prob.view(-1))
         episode_reward += reward
         # update old observation
         old_obs = new_obs
         if done:
             break
     dones[-1] = True
-    # time_2 = time.time()
-    # print("    id={}, reward: {}, episode_time: {:.3f}sec".format(task_id, episode_reward, time_2 - time_1))
     return [old_states, new_states, raw_actions, rewards, dones, log_probs, episode_reward]
 
 
@@ -54,6 +53,7 @@ def rollout_serial(rolloutmem, envs, actor, critic, params):
         for step in range(params.policy_params.horizon):
             # act one step in current environment
             action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
+            assert (env.action_space.low < np.array(action)).all() and (np.array(action) < env.action_space.high).all()
             new_state, reward, done, info = env.step(action.cpu() if hasattr(action, 'cpu') else action)
             time.sleep(.002)  # check this issue: https://github.com/openai/mujoco-py/issues/340
             # record trajectory step
@@ -62,7 +62,7 @@ def rollout_serial(rolloutmem, envs, actor, critic, params):
             raw_actions.append(raw_action.view(-1))
             rewards.append(reward)
             dones.append(done)
-            log_probs.append(log_prob)
+            log_probs.append(log_prob.view(-1))
             episode_reward += reward
             # update old observation
             old_state = new_state
@@ -109,7 +109,7 @@ def rollout_parallel(rolloutmem, envs, actor, critic, params):
     return torch.mean(torch.Tensor(episodes_rewards))
 
 
-parallel_rollout = False
+# parallel_rollout = False
 
 
 def rollout(rolloutmem, envs, actor, critic, params, iteration):
@@ -178,10 +178,12 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
 
 def train(params):
     # algorithm ingredients instantiation
+    time_start = time.time()
+    os.environ['PYTHONHASHSEED'] = str(params.seed)
+    random.seed(params.seed)
     torch.manual_seed(params.seed)
-    torch.cuda.manual_seed_all(params.seed)
     np.random.seed(params.seed)
-    # os.environ['PYTHONHASHSEED'] = str(params.seed)
+    # torch.cuda.manual_seed_all(params.seed)
     actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
     critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
     rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
@@ -219,7 +221,8 @@ def train(params):
         tb.add_scalar('surr1', surr1.mean(), iteration)
         tb.add_scalar('surr2', surr2.mean(), iteration)
         tb.add_scalar('epoch_len', epochs_len, iteration)
-        tb.add_scalar('rewards', mean_iter_reward, iteration)
+        tb.add_scalar('reward', mean_iter_reward, iteration)
+        tb.add_scalar('reward_over_time(s)', mean_iter_reward, int(time.time() - time_start))
         iter_end_time = time.time()
         rollout_time.update(update_start_time - iter_start_time)
         update_time.update(iter_end_time - update_start_time)
