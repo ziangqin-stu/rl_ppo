@@ -113,6 +113,7 @@ def rollout_parallel(rolloutmem, envs, actor, critic, params):
 def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     # interact
     env_number = len(envs)
+    env_attributes = ray.get(envs[0].get_attributes.remote())
     old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward \
         = [], [], [], [], [], [], [], [0] * env_number
     old_state = ray.get([env.reset.remote() for env in envs])
@@ -120,6 +121,7 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     for step in range(params.policy_params.horizon):
         # interact
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
+        assert (env_attributes['action_high'] > action).all() and (action > env_attributes['action_low']).all()
         step_obs_batch = ray.get(
             [envs[i].step.remote(action[i]) for i in range(env_number)])  # new_obs, reward, done, info
         # parse interact results
@@ -201,16 +203,17 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
         rolloutmem.compute_epoch_length())
 
 
-def train(params):
-    # algorithm ingredients instantiation
-    time_start = time.time()
+def train(params, pretrains=None):
+    # ============
+    # Preparations
+    # ============
+    # >> set random seed (for reproducing experiment)
     os.environ['PYTHONHASHSEED'] = str(params.seed)
     random.seed(params.seed)
     torch.manual_seed(params.seed)
     np.random.seed(params.seed)
-    # torch.cuda.manual_seed_all(params.seed)
-    ray.init(log_to_driver=False, local_mode=False)
-    # ray.init()
+    # >> algorithm ingredients instantiation
+    ray.init(log_to_driver=False, local_mode=False)  # or, ray.init()
     actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
     critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
     rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
@@ -218,13 +221,13 @@ def train(params):
     for i in range(len(envs)): envs[i].seed.remote(seed=params.seed + i)
     optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()),
                                  lr=params.policy_params.learning_rate)
-    # logger instantiation
     tb = SummaryWriter()
     rollout_time, update_time = AverageMeter(), AverageMeter()
+    # >> training loop
     print("----------------------------------")
     print("Training model with {} parameters...".format(count_model_params(actor) + count_model_params(critic)))
     print("----------------------------------")
-    # training loop
+    time_start = time.time()
     for iteration in range(int(params.iter_num)):
         # collect rollouts from current policy
         rolloutmem.reset()

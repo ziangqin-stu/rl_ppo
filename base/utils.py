@@ -143,6 +143,14 @@ class ParallelEnv:
     def __init__(self, env_name, id):
         self.env = gen_env(env_name)
         self.id = id
+        self.attributes = {
+            'env_name': self.env.spec.id,
+            'max_episode_steps': self.env.spec.max_episode_steps,  # int
+            'action_high': torch.Tensor(self.env.action_space.high),  # Torch
+            'action_low': torch.Tensor(self.env.action_space.low),  # Torch
+            'action_type': {'shape': self.env.action_space.shape,
+                            'data_type': type(self.env.action_space.sample())}
+        }
         # print("env_{} created!".format(self.id))
 
     def reset(self):
@@ -157,6 +165,9 @@ class ParallelEnv:
 
     def seed(self, seed):
         self.env.seed(seed)
+
+    def get_attributes(self):
+        return self.attributes
 
 
 class ParamDict(dict):
