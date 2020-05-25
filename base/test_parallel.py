@@ -303,6 +303,7 @@ def parallel_rollout_env(envs, actor, critic, rolloutmem, horizon):
     old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward \
         = [], [], [], [], [], [], [], [0] * env_number
     old_state = ray.get([env.reset.remote() for env in envs])
+    rolloutmem.reset()
     for step in range(horizon):
         # interact
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
@@ -332,7 +333,7 @@ def parallel_rollout_env(envs, actor, critic, rolloutmem, horizon):
     dones = torch.Tensor(dones).permute(1, 0).cuda()
     log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
     gae_deltas = critic.gae_delta(old_states, new_states, rewards, .99).cuda()
-    advantages = torch.Tensor(get_advantage_new(gae_deltas, .99, .95)).cuda()
+    advantages = get_advantage_new(gae_deltas, .99, .95).cuda()
     values = get_values(rewards, .99).cuda()
     advantages = advantages[:, :, None]
     values = values[:, :, None]
@@ -373,7 +374,7 @@ if __name__ == "__main__":
     # loop_rollout('InvertedPendulum-v2', 50, 80)
     # subprocenv_rollout('InvertedPendulum-v2', 50, 10)
     # parallel_rollout_sim('Hopper-v2', 50, 200)
-    repeat_rollout('Hopper-v2', 5, 20, 5)
+    repeat_rollout('Hopper-v2', 50, 200, 5)
     # test_paraenv('Hopper-v2')
     # test_ray_actor()
     # parallel_rollout_sim('InvertedDoublePendulum-v2', 50, 200)

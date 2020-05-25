@@ -5,6 +5,7 @@ from gym.wrappers import Monitor
 from gym_minigrid.wrappers import *
 from torch.distributions.categorical import Categorical
 from torch.distributions.normal import Normal
+import ray
 
 from data import envnames_minigrid, envnames_classiccontrol, envnames_mujoco
 from networks import ActorContinueFC, ActorDiscreteFC, CriticFC, ActorDiscreteCNN, CriticCNN
@@ -112,10 +113,11 @@ def get_dist_type(env_name):
         raise NotImplementedError
 
 
-def log_policy_rollout(params, actor, env, video_name):
+def log_policy_rollout(params, actor, env_name, video_name):
     cur_time = time.strftime("[%Y-%m-%d_%H:%M:%S]", time.localtime())
     save_path_name = os.path.join(params.save_path, 'video', '{}->{}{}.mp4'
                                   .format(params.prefix, video_name, cur_time))
+    env = gen_env(env_name)
     env = Monitor(env, save_path_name, force=True)
     done = False
     episode_reward = 0.
@@ -134,6 +136,27 @@ def log_policy_rollout(params, actor, env, video_name):
     print('Total length:', episode_length)
     env.close()
     print('Finished Sampling, saved video in {}.\n'.format(save_path_name))
+
+
+@ray.remote
+class ParallelEnv:
+    def __init__(self, env_name, id):
+        self.env = gen_env(env_name)
+        self.id = id
+        # print("env_{} created!".format(self.id))
+
+    def reset(self):
+        obs = self.env.reset()
+        # print("env_{} reset!".format(self.id))
+        return obs
+
+    def step(self, state):
+        step_data = self.env.step(state)
+        # print("env_{} step!".format(self.id))
+        return step_data
+
+    def seed(self, seed):
+        self.env.seed(seed)
 
 
 class ParamDict(dict):

@@ -11,8 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from networks import get_norm_log_prob
 from rolloutmemory import RolloutMemory
 from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
-    get_values, \
-    get_entropy, log_policy_rollout, AverageMeter
+    get_values, get_entropy, log_policy_rollout, ParallelEnv, AverageMeter
 
 
 @ray.remote(num_gpus=3)
@@ -99,8 +98,7 @@ def rollout_parallel(rolloutmem, envs, actor, critic, params):
             torch.Tensor(episode[3]).cuda(), torch.Tensor(episode[4]).cuda(), torch.stack(episode[5]).detach().cuda(), \
             torch.Tensor([episode[6]]).cuda()
         gae_deltas = critic.gae_delta(old_states, new_states, rewards, params.policy_params.discount)
-        advantages = torch.Tensor(
-            get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd)).cuda()
+        advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd).cuda()
         values = get_values(rewards, params.policy_params.discount).cuda()
         if len(advantages.shape) == 1: advantages = advantages[:, None]
         if len(values.shape) == 1: values = values[:, None]
@@ -112,32 +110,58 @@ def rollout_parallel(rolloutmem, envs, actor, critic, params):
 # parallel_rollout = False
 
 
+def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
+    # interact
+    env_number = len(envs)
+    old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward \
+        = [], [], [], [], [], [], [], [0] * env_number
+    old_state = ray.get([env.reset.remote() for env in envs])
+    rolloutmem.reset()
+    for step in range(params.policy_params.horizon):
+        # interact
+        action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
+        step_obs_batch = ray.get(
+            [envs[i].step.remote(action[i]) for i in range(env_number)])  # new_obs, reward, done, info
+        # parse interact results
+        new_state = [step_obs[0] for step_obs in step_obs_batch]
+        reward = [step_obs[1] for step_obs in step_obs_batch]
+        done = [step_obs[2] for step_obs in step_obs_batch]
+        # record parsed results
+        old_states.append(old_state)
+        new_states.append(new_state)
+        raw_actions.append(raw_action)
+        rewards.append(reward)
+        dones.append(done)
+        log_probs.append(log_prob)
+        episode_reward = [float(reward[i]) + episode_reward[i] for i in range(len(reward))]
+        # update old observation
+        old_state = new_state
+        if np.array(done).all():
+            break
+    dones[-1] = [True] * env_number
+    old_states = torch.Tensor(old_states).permute(1, 0, 2).cuda()
+    new_states = torch.Tensor(new_states).permute(1, 0, 2).cuda()
+    raw_actions = torch.stack(raw_actions).permute(1, 0, 2).detach().cuda()
+    rewards = torch.Tensor(rewards).permute(1, 0).cuda()
+    dones = torch.Tensor(dones).permute(1, 0).cuda()
+    log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
+    gae_deltas = critic.gae_delta(old_states, new_states, rewards, .99).cuda()
+    advantages = get_advantage_new(gae_deltas, .99, .95).detach().cuda()[:, :, None]
+    values = get_values(rewards, .99).cuda()[:, :, None]
+    # rolloutmem.append(old_states, new_states, raw_actions, rewards, dones, log_probs, advantages, values)
+    for i in range(env_number):
+        # abandon redundant step info
+        first_done = (dones[i] > 0).nonzero().min()
+        rolloutmem.append(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
+                          raw_actions[i][:first_done + 1], rewards[i][:first_done + 1], dones[i][:first_done + 1],
+                          log_probs[i][:first_done + 1], advantages[i][:first_done + 1], values[i][:first_done + 1])
+    return torch.mean(torch.Tensor(episode_reward))
+
+
 def rollout(rolloutmem, envs, actor, critic, params, iteration):
-    # select bets rollout method during training
-    # global parallel_rollout
-    # if not parallel_rollout:
-    #     if iteration % params.parallel_check_num == 0:
-    #         t_1 = time.time()
-    #         rollout_parallel(rolloutmem, envs, actor, critic, params)
-    #         rolloutmem.reset()
-    #         t_2 = time.time()
-    #         mean_episode_reward = rollout_serial(rolloutmem, envs, actor, critic, params)
-    #         t_3 = time.time()
-    #         time_p, time_s = t_2 - t_1, t_3 - t_2
-    #         if time_s - time_p > 2.:
-    #             parallel_rollout = True
-    #             print(
-    #                 "\n\n    >>> parallel_time: {:.3f}, serial_time: {:.3f}, change to parallel rollout.<<<\n\n".format(
-    #                     time_p, time_s))
-    #         else:
-    #             print("\n    >>> checking parallel priority: parallel_time: {:.3f}, serial_time: {:.3f}<<<\n".format(
-    #                 time_p, time_s))
-    #     else:
-    #         mean_episode_reward = rollout_serial(rolloutmem, envs, actor, critic, params)
-    # else:
-    #     mean_episode_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
     if params.parallel:
-        mean_episode_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
+        # mean_episode_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
+        mean_episode_reward = parallel_rollout_env(rolloutmem, envs, actor, critic, params)
     else:
         mean_episode_reward = rollout_serial(rolloutmem, envs, actor, critic, params)
     return mean_episode_reward
@@ -152,7 +176,8 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
         = rolloutmem.sample(params.policy_params.batch_size)
     # compute loss factors
     logits = actor.policy_out(old_obs_batch)
-    new_log_prob_batch = get_norm_log_prob(logits, raw_action_batch, actor.scale, dist_type=get_dist_type(params.env_name))
+    new_log_prob_batch = get_norm_log_prob(logits, raw_action_batch, actor.scale,
+                                           dist_type=get_dist_type(params.env_name))
     assert len(new_log_prob_batch.shape) > 1, '    >>> [optimize_step -> new_log_prob_batch], Wrong Dimension'
     ratio = torch.exp(new_log_prob_batch - old_log_prob_batch)
     surr1 = ratio * advantage_batch
@@ -184,15 +209,15 @@ def train(params):
     torch.manual_seed(params.seed)
     np.random.seed(params.seed)
     # torch.cuda.manual_seed_all(params.seed)
+    ray.init(log_to_driver=False, local_mode=False)
+    # ray.init()
     actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
     critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
     rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
-    envs = [gen_env(params.env_name) for i in range(params.policy_params.envs_num)]
-    for i in range(len(envs)): envs[i].seed(seed=params.seed + i)
+    envs = [ParallelEnv.remote(params.env_name, i) for i in range(params.policy_params.envs_num)]
+    for i in range(len(envs)): envs[i].seed.remote(seed=params.seed + i)
     optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()),
                                  lr=params.policy_params.learning_rate)
-    # ray.init(log_to_driver=False, local_mode=False)
-    ray.init()
     # logger instantiation
     tb = SummaryWriter()
     rollout_time, update_time = AverageMeter(), AverageMeter()
@@ -232,8 +257,8 @@ def train(params):
               .format(iteration, mean_iter_reward, rollout_time.val, update_time.val))
         # save rollout video
         if iteration % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
-            log_policy_rollout(params, actor, envs[0], 'iter-{}'.format(iteration))
+            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration))
     # save rollout videos
     if params.log_video:
         for i in range(3):
-            log_policy_rollout(params, actor, envs[0], 'final-{}'.format(i))
+            log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
