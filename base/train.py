@@ -121,7 +121,8 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     for step in range(params.policy_params.horizon):
         # interact
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
-        assert (env_attributes['action_high'] > action).all() and (action > env_attributes['action_low']).all()
+        # print('action spy: {}'.format(action))
+        assert (env_attributes['action_high'] >= action).all() and (action >= env_attributes['action_low']).all(), '>> Error: action value exceeds boundary!'
         step_obs_batch = ray.get(
             [envs[i].step.remote(action[i]) for i in range(env_number)])  # new_obs, reward, done, info
         # parse interact results
