@@ -145,9 +145,12 @@ class ParallelEnv:
         self.id = id
         self.attributes = {
             'env_name': self.env.spec.id,
+            'image_obs': self.env.spec.id in envnames_minigrid,
             'max_episode_steps': self.env.spec.max_episode_steps,  # int
-            'action_high': torch.Tensor(self.env.action_space.high),  # Torch
-            'action_low': torch.Tensor(self.env.action_space.low),  # Torch
+            'action_high': torch.Tensor(self.env.action_space.high) if hasattr(self.env.action_space, 'high') else torch.Tensor(
+                [float('inf')]),  # Torch
+            'action_low': torch.Tensor(self.env.action_space.low) if hasattr(self.env.action_space, 'low') else torch.Tensor([float('-inf')]),
+            # Torch
             'action_type': {'shape': self.env.action_space.shape,
                             'data_type': type(self.env.action_space.sample())}
         }

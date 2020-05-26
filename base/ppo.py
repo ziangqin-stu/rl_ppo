@@ -86,7 +86,7 @@ def load_params(index):
             seed=args.seed if args.seed is not None else int(file_param['seed']),
             reducing_entro_loss=args.reducing_entro_loss if args.reducing_entro_loss in true_list else file_param['reducing_entro_loss'] in true_list
         )
-    print(">>>>>>>"+str(params.use_pretrain)+"  "+str(args.use_pretrain))
+    # print(">>>>>>>"+str(params.use_pretrain)+"  "+str(args.use_pretrain))
     return params, policy_params
 
 

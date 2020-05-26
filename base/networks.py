@@ -284,13 +284,16 @@ class CNNDiscreteNet(nn.Module):
                 nn.init.orthogonal_(self.fc[i].weight)
 
     def forward(self, state):
-        if len(state.shape) < 4:
+        if len(state.shape) == 3:
             # reformat single image: (width, height, channel) -> (channel, width, height)
             state = state.permute(2, 0, 1)
             state = state.unsqueeze(0)
-        else:
+        elif len(state.shape) == 4:
             # reformat batch images: (batch_size, width, height, channel) -> (batch_size, channel, width, height)
             state = state.permute(0, 3, 1, 2)
+        elif len(state.shape) == 5:
+            # reformat batch images: (batch_size, parallel_batch_size, width, height, channel) -> (batch_size, parallel_batch_size, channel, width, height)
+            state = state.permute(0, 1, 4, 2, 3)
         x = self.conv1(state)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -310,6 +313,9 @@ class ActorDiscreteCNN(CNNDiscreteNet):
         raw_action = dist.sample()
         action = self.scale * raw_action
         log_prob = dist.log_prob(raw_action.double())
+        if len(action.shape) < 2: action = action[:, None]  # expand dimension of minigrid action(int)
+        if len(raw_action.shape) < 2: raw_action = raw_action[:, None]  # also raw_action
+        if len(log_prob.shape) < 2: log_prob = log_prob[:, None]  # also log_prob
         return action, log_prob, raw_action
 
     def policy_out(self, state):

@@ -1,6 +1,6 @@
 # Implementation Practice: Proxy Policy Optimization
 
-see this [[README tutorial](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)]
+see this [[README writing tutorial](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)]
 
 > Project description paragraph
 
@@ -20,13 +20,29 @@ see this [[README tutorial](https://gist.github.com/PurpleBooth/109311bb0361f32d
 
 > Running a simple(interesting) test for showing it works
 
+```python
+python ppo.py --param_id=0
+```
+
+
+
 ## Code Running Guide
 
 ### Command Line Interface
 
-You can reach each training settings and hyperparameters separately using command line arguments in this implementation. Several default argument set also provided in `training_param.csv`, you can select different training setting set by ...
+You can reach each training settings and hyperparameters separately using command line arguments in this implementation. Several default argument set also provided in `training_param.csv`, you can select different training setting set by specify the parameter set id in `training_param.csv`, using command line argument `--param_id`.
 
-### Loggers
+Like other python code, you can use the command line interface to control the program. The difference in this implementation is you can select different default argument set to reach a baseline experiment setting, i.e. , select different environments and apply baseline corresponding hyperparameter to it. Then you can customize the parameters using other command line arguments to run a slightly different experiment.
+
+The "baseline argument sets" are stored in `training_param.csv` as mentioned above, each training setting is a line, you can also add your training settings in that file and do the rest tests. The purpose of designing this feature is to accelerate the tuning process and help to keep a clear mind by saving time spent on typing in parameters.
+
+Try:
+
+```python
+python ppo.py --param_id=1 --envs_num=5
+```
+
+### Training Loggers
 
 This implementation use `tensorboard` as training monitoring tool. Logged data are saved in `./run/` folder.
 
@@ -41,7 +57,7 @@ Where `log_video` specifies whether saving videos during training, `plotting_ite
 
 Each video is saved in a folder named by the training prefix and iteration number when sampling happens.
 
-### Resume Model
+### Resume Model Feature
 
 This implementation also offers a feature of save and load training check points. 
 
@@ -67,15 +83,67 @@ Checkpoints features are built with `torch.save()` and `torch.load()`, local fil
 
 Try:
 
-> ~~~python
-> python ppo.py --checkpoint_iter=5
-> ~~~
->
-> ```python
-> python ppo.py --use_pretrain=True --pretrain_file=FILE_NAME
-> ```
+~~~python
+python ppo.py --checkpoint_iter=5
+~~~
+
+```python
+python ppo.py --use_pretrain=True --pretrain_file=FILE_NAME
+```
 
 You can see prompts in command line to see the loading and saving process working well.
 
 ## Project Structure
 
+### PPO Code Structure
+
+### Applied Tricks
+
+## Training Result
+
+### Discrete Environment:
+
+CartPole-v1
+
+MountainCar-v0
+
+### Continuous Environment:
+
+InvertedPendulum-v2
+
+Hopper-v2
+
+Humanoid-v2
+
+### Image Observation Environment:
+
+MiniGrid-Empty-5x5-v0
+
+MiniGrid-SimpleCrossingS9N1-v0
+
+MiniGrid-LavaGapS5-v0
+
+### Some Episode Videos:
+
+## Develop Experience: Take Homes
+
+### Always Be Cautious
+
+* Start form a small system, make sure it works then add more features, so you can quickly know what is going wrong
+* Start from simplest environments then move to more complex ones, add tricks layer by layer
+
+### Be Aware of Data Formats
+
+Some times you need to transform your intermediate data with different python tools like `torch.Tensor`,` ndarray`, python `list` and so on. The transformation is easy an d safe but be careful of the computation over data after your change its format, different python packages treat data differently during their computation. The issue I spent a lot of time to debug is that after transfer plain python `float` number into `torch.Tensor` with an redundant dimeson, I get wrong dimension data when apply multiplication.
+
+So please be aware of your data format if you are not confident about all your "data flow", check key interface in your code to make sure if data are working correctly if necessary.
+
+### Think the Correct Way of Debugging
+
+I wasted a lot of time on debugging the logic of my code. But it ...
+
+record your debugging route, avoid lost in long logic chains ...
+
+### Learn More Engineer Knowledge for Coding
+
+It is critical for an AI developer to have solid develop skills! I think I need to learn more coding skills and engineering knowledge as software developer engineers do. This will improve your code quality, also allows you to be more confident during your development. 

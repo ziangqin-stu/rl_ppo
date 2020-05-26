@@ -19,12 +19,13 @@ def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
     # initialize logger
     old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward = [], [], [], [], [], [], [], 0.
     # collect episode
-    old_obs = env.reset()
+    old_obs = ray.get(env.reset.remote())
+    env_attributes = ray.get(env.get_attributes.remote())
     for step in range(horizon):
         # interact with environment
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_obs).cuda())
-        assert (env.action_space.low < np.array(action)).all() and (np.array(action) < env.action_space.high).all()
-        new_obs, reward, done, info = env.step(action)
+        assert (env_attributes['action_high'].cuda() >= action).all() and (action >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
+        [new_obs, reward, done, info] = ray.get(env.step.remote(action))
         # record trajectory step
         old_states.append(old_obs)
         new_states.append(new_obs)
@@ -98,7 +99,7 @@ def rollout_parallel(rolloutmem, envs, actor, critic, params):
             torch.Tensor(episode[3]).cuda(), torch.Tensor(episode[4]).cuda(), torch.stack(episode[5]).detach().cuda(), \
             torch.Tensor([episode[6]]).cuda()
         gae_deltas = critic.gae_delta(old_states, new_states, rewards, params.policy_params.discount)
-        advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd).cuda()
+        advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd).detach().cuda()
         values = get_values(rewards, params.policy_params.discount).cuda()
         if len(advantages.shape) == 1: advantages = advantages[:, None]
         if len(values.shape) == 1: values = values[:, None]
@@ -121,10 +122,10 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     for step in range(params.policy_params.horizon):
         # interact
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
-        # print('action spy: {}'.format(action))
-        assert (env_attributes['action_high'] >= action).all() and (action >= env_attributes['action_low']).all(), '>> Error: action value exceeds boundary!'
+        assert (env_attributes['action_high'].cuda() >= action).all() and (action >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
+        # print("    >> action: {}".format(action))
         step_obs_batch = ray.get(
-            [envs[i].step.remote(action[i]) for i in range(env_number)])  # new_obs, reward, done, info
+            [envs[i].step.remote(action[i].cpu()) for i in range(env_number)])  # new_obs, reward, done, info
         # parse interact results
         new_state = [step_obs[0] for step_obs in step_obs_batch]
         reward = [step_obs[1] for step_obs in step_obs_batch]
@@ -142,17 +143,29 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         if np.array(done).all():
             break
     dones[-1] = [True] * env_number
-    old_states = torch.Tensor(old_states).permute(1, 0, 2).cuda()
-    new_states = torch.Tensor(new_states).permute(1, 0, 2).cuda()
-    raw_actions = torch.stack(raw_actions).permute(1, 0, 2).detach().cuda()
-    rewards = torch.Tensor(rewards).permute(1, 0).cuda()
-    dones = torch.Tensor(dones).permute(1, 0).cuda()
-    log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
-    gae_deltas = critic.gae_delta(old_states, new_states, rewards, .99).cuda()
-    advantages = get_advantage_new(gae_deltas, .99, .95).detach().cuda()[:, :, None]
-    values = get_values(rewards, .99).cuda()[:, :, None]
+    if env_attributes['image_obs']:
+        old_states = torch.Tensor(old_states).permute(1, 0, 2, 3, 4).cuda()
+        new_states = torch.Tensor(new_states).permute(1, 0, 2, 3, 4).cuda()
+        raw_actions = torch.stack(raw_actions).permute(1, 0, 2).detach().cuda()
+        rewards = torch.Tensor(rewards).permute(1, 0).cuda()
+        dones = torch.Tensor(dones).permute(1, 0).cuda()
+        log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
+    else:
+        old_states = torch.Tensor(old_states).permute(1, 0, 2).cuda()
+        new_states = torch.Tensor(new_states).permute(1, 0, 2).cuda()
+        raw_actions = torch.stack(raw_actions).permute(1, 0, 2).detach().cuda()
+        rewards = torch.Tensor(rewards).permute(1, 0).cuda()
+        dones = torch.Tensor(dones).permute(1, 0).cuda()
+        log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
+
+    # gae_deltas = critic.gae_delta(old_states, new_states, rewards, .99).cuda()
+    # advantages = get_advantage_new(gae_deltas, .99, .95).detach().cuda()[:, :, None]
+    # values = get_values(rewards, .99).cuda()[:, :, None]
     # rolloutmem.append(old_states, new_states, raw_actions, rewards, dones, log_probs, advantages, values)
     for i in range(env_number):
+        gae_deltas = critic.gae_delta(old_states[i], new_states[i], rewards[i], .99).cuda()
+        advantages = get_advantage_new(gae_deltas, .99, .95)[:, None].detach().cuda()
+        values = get_values(rewards[i], .99)[:, None].cuda()
         # abandon redundant step info
         first_done = (dones[i] > 0).nonzero().min()
         rolloutmem.append(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
@@ -215,7 +228,6 @@ def train(params, pretrains=None):
         seed = params.seed
         actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
         critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
-        rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
         optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()),
                                      lr=params.policy_params.learning_rate)
         rollout_time, update_time = AverageMeter(), AverageMeter()
@@ -240,7 +252,6 @@ def train(params, pretrains=None):
         actor.train()
         critic.load_state_dict(checkpoint['critic_state_dict'])
         critic.train()
-        rolloutmem = checkpoint['rolloutmem']
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         [rollout_time, update_time] = checkpoint['time_recorder']
         iteration_pretrain = checkpoint['iteration']
@@ -251,6 +262,7 @@ def train(params, pretrains=None):
         np.random.seed(seed)
         print("Loading finished!")
         print("------------------------------\n\n")
+    rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
     envs = [ParallelEnv.remote(params.env_name, i) for i in range(params.policy_params.envs_num)]
     for i in range(len(envs)): envs[i].seed.remote(seed=seed + i)
     tb = SummaryWriter()
@@ -306,7 +318,6 @@ def train(params, pretrains=None):
                 'actor_state_dict': actor.state_dict(),
                 'critic_state_dict': critic.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'rolloutmem': rolloutmem,
                 'time_recorder': [rollout_time, update_time],
             }, save_path)
             print("Saved checkpoint to: {}".format(save_path))
