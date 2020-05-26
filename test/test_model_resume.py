@@ -23,7 +23,6 @@ def test_state_dict(env_name):
 
 
 def test_save(env_name):
-    ray.init()
     iteration = 1000
     actor = gen_actor(env_name, 64)
     critic = gen_critic(env_name, 64)
@@ -45,13 +44,13 @@ def test_save(env_name):
         'actor_state_dict': actor.state_dict(),
         'critic_state_dict': critic.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'rolloutmem': rolloutmem,
         'time_recorder': [rollout_time, update_time],
     }, save_path)
     print("Save Done!")
 
 
 def test_load(env_name):
-    ray.init()
     actor = gen_actor(env_name, 64)
     critic = gen_critic(env_name, 64)
     optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=0.0001)
@@ -64,6 +63,7 @@ def test_load(env_name):
     critic.load_state_dict(checkpoint['critic_state_dict'])
     critic.train()
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    rolloutmem = checkpoint['rolloutmem']
     iteration = checkpoint['iteration']
     seed = checkpoint['seed']
     [rollout_time, update_time] = checkpoint['time_recorder']
@@ -71,7 +71,9 @@ def test_load(env_name):
     print('')
 
 
+
+ray.init()
 # test_state_dict("Hopper-v2")
-# test_save("Hopper-v2")
+test_save("Hopper-v2")
 test_load("Hopper-v2")
 # test_state_dict("Hopper-v2")

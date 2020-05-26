@@ -16,17 +16,18 @@ parser.add_argument('--param_id', default=0, type=int, help='index of parameter 
 parser.add_argument('--env_name', help='training gym environment name, check data.py for supporting environments.')
 parser.add_argument('--prefix', help='experiment prefix for savings.')
 parser.add_argument('--save_path', help='folder name of results saving.')
-parser.add_argument('--use_pretrain', '-p', type=bool, help='specify if using pretrained model.')
+parser.add_argument('--use_pretrain', '-p', help='specify if using pretrained model.')
 parser.add_argument('--pretrain_file', type=str, help='folder name of pretrained model.')
-parser.add_argument('--parallel', type=bool, help='specify if use ray parallelization')
+parser.add_argument('--save_checkpoint', help='specify if save checkpoint during training')
+parser.add_argument('--checkpoint_iter', type=int, help='checkpoint saving interval')
+parser.add_argument('--parallel', help='specify if use ray parallelization')
 # >> loggers
-parser.add_argument('--log_video', type=bool, help='specify if save episode video during training')
+parser.add_argument('--log_video', help='specify if save episode video during training')
 parser.add_argument('--plotting_iters', type=int, help='video saving interval')
 # >> algorithm training settings
 parser.add_argument('--iter_num', type=int, help='training iter length')
 parser.add_argument('--seed', type=int, help='training seed (experimental)')
-parser.add_argument('--reducing_entro_loss', type=bool,
-                    help='specify if apply entropy coefficient discount during training')
+parser.add_argument('--reducing_entro_loss', help='specify if apply entropy coefficient discount during training')
 # >> algorithm detailed settings
 parser.add_argument('--learning_rate', type=float, help='optimizer learning rate')
 parser.add_argument('--hidden_dim', type=int, help='fully connected network hidden dimension')
@@ -49,6 +50,8 @@ args = parser.parse_args()
 # =======================
 def load_params(index):
     f = open('./train_param.csv', 'r')
+    true_list = ['True', 'TRUE', 'true']
+    false_list = ['False', 'FALSE', 'false']
     with f:
         reader = csv.DictReader(f)
         rows = [row for row in reader]
@@ -71,17 +74,19 @@ def load_params(index):
             env_name=args.env_name if args.env_name is not None else file_param['env_name'],
             prefix=args.prefix if args.prefix is not None else file_param['prefix'],
             save_path=args.save_path if args.save_path is not None else file_param['save_path'],
-            use_pretrain=args.use_pretrain if args.use_pretrain is not None else bool(file_param['use_pretrain']),
+            use_pretrain=args.use_pretrain if args.use_pretrain in true_list else file_param['use_pretrain'] in true_list,
             pretrain_file=args.pretrain_file if args.pretrain_file is not None else file_param['pretrain_file'],
-            parallel=args.parallel if args.parallel is not None else bool(file_param['parallel']),
-            log_video=args.log_video if args.log_video is not None else bool(file_param['log_video']),
+            save_checkpoint=args.save_checkpoint if args.save_checkpoint is not None else file_param['save_checkpoint'],
+            checkpoint_iter=args.checkpoint_iter if args.checkpoint_iter is not None else file_param['checkpoint_iter'],
+            parallel=args.parallel if args.parallel in true_list else file_param['parallel'] in true_list,
+            log_video=args.log_video if args.log_video in true_list else file_param['log_video'] in true_list,
             plotting_iters=args.plotting_iters if args.plotting_iters is not None else int(
                 file_param['plotting_iters']),
             iter_num=args.iter_num if args.iter_num is not None else int(file_param['iter_num']),
             seed=args.seed if args.seed is not None else int(file_param['seed']),
-            reducing_entro_loss=args.reducing_entro_loss if args.reducing_entro_loss is not None else bool(
-                file_param['reducing_entro_loss'])
+            reducing_entro_loss=args.reducing_entro_loss if args.reducing_entro_loss in true_list else file_param['reducing_entro_loss'] in true_list
         )
+    print(">>>>>>>"+str(params.use_pretrain)+"  "+str(args.use_pretrain))
     return params, policy_params
 
 

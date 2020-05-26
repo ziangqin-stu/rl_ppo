@@ -161,7 +161,7 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     return torch.mean(torch.Tensor(episode_reward))
 
 
-def rollout(rolloutmem, envs, actor, critic, params, iteration):
+def rollout(rolloutmem, envs, actor, critic, params):
     if params.parallel:
         # mean_episode_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
         mean_episode_reward = parallel_rollout_env(rolloutmem, envs, actor, critic, params)
@@ -174,6 +174,7 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     entropy_discount = 1.
     if params.reducing_entro_loss:
         entropy_discount = 1. - iteration / params.iter_num
+    # print('entropy_discount: {}'.format(entropy_discount))
     # sample rollout steps from current policy
     old_obs_batch, _, raw_action_batch, reward_batch, done_batch, old_log_prob_batch, advantage_batch, value_batch \
         = rolloutmem.sample(params.policy_params.batch_size)
@@ -208,22 +209,54 @@ def train(params, pretrains=None):
     # ============
     # Preparations
     # ============
-    # >> set random seed (for reproducing experiment)
-    os.environ['PYTHONHASHSEED'] = str(params.seed)
-    random.seed(params.seed)
-    torch.manual_seed(params.seed)
-    np.random.seed(params.seed)
-    # >> algorithm ingredients instantiation
     ray.init(log_to_driver=False, local_mode=False)  # or, ray.init()
-    actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
-    critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
-    rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
+    if not params.use_pretrain:
+        # >> algorithm ingredients instantiation
+        seed = params.seed
+        actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
+        critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
+        rolloutmem = RolloutMemory(params.policy_params.envs_num * params.policy_params.horizon, params.env_name)
+        optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()),
+                                     lr=params.policy_params.learning_rate)
+        rollout_time, update_time = AverageMeter(), AverageMeter()
+        iteration_pretrain = 0
+        # >> set random seed (for reproducing experiment)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+    else:
+        # build models
+        actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
+        critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
+        optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=0.0001)
+        # load models
+        print("\n\nLoading training checkpoint...")
+        print("------------------------------")
+        load_path = os.path.join(params.pretrain_file, params.prefix+'_iter_10.tar')
+        checkpoint = torch.load(load_path)
+        seed = checkpoint['seed']
+        actor.load_state_dict(checkpoint['actor_state_dict'])
+        actor.train()
+        critic.load_state_dict(checkpoint['critic_state_dict'])
+        critic.train()
+        rolloutmem = checkpoint['rolloutmem']
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        [rollout_time, update_time] = checkpoint['time_recorder']
+        iteration_pretrain = checkpoint['iteration']
+        # >> set random seed (for reproducing experiment)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        print("Loading finished!")
+        print("------------------------------\n\n")
     envs = [ParallelEnv.remote(params.env_name, i) for i in range(params.policy_params.envs_num)]
-    for i in range(len(envs)): envs[i].seed.remote(seed=params.seed + i)
-    optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()),
-                                 lr=params.policy_params.learning_rate)
+    for i in range(len(envs)): envs[i].seed.remote(seed=seed + i)
     tb = SummaryWriter()
-    rollout_time, update_time = AverageMeter(), AverageMeter()
+    # ============
+    # Training
+    # ============
     # >> training loop
     print("----------------------------------")
     print("Training model with {} parameters...".format(count_model_params(actor) + count_model_params(critic)))
@@ -233,7 +266,7 @@ def train(params, pretrains=None):
         # collect rollouts from current policy
         rolloutmem.reset()
         iter_start_time = time.time()
-        mean_iter_reward = rollout(rolloutmem, envs, actor, critic, params, iteration)
+        mean_iter_reward = rollout(rolloutmem, envs, actor, critic, params)
         # optimize by gradient descent
         update_start_time = time.time()
         loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \
@@ -241,31 +274,47 @@ def train(params, pretrains=None):
         for epoch in range(params.policy_params.epochs_num):
             loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \
                 optimize_step(optimizer, rolloutmem, actor, critic, params, iteration)
-        tb.add_scalar('loss', loss, iteration)
-        tb.add_scalar('policy_loss', -1 * policy_loss, iteration)
-        tb.add_scalar('critic_loss', critic_loss, iteration)
-        tb.add_scalar('entropy_loss', -1 * entropy_loss, iteration)
-        tb.add_scalar('advantage', advantage.mean(), iteration)
-        tb.add_scalar('ratio', ratio.mean(), iteration)
-        tb.add_scalar('surr1', surr1.mean(), iteration)
-        tb.add_scalar('surr2', surr2.mean(), iteration)
-        tb.add_scalar('epoch_len', epochs_len, iteration)
-        tb.add_scalar('reward', mean_iter_reward, iteration)
+        tb.add_scalar('loss', loss, iteration+iteration_pretrain)
+        tb.add_scalar('policy_loss', -1 * policy_loss, iteration+iteration_pretrain)
+        tb.add_scalar('critic_loss', critic_loss, iteration+iteration_pretrain)
+        tb.add_scalar('entropy_loss', -1 * entropy_loss, iteration+iteration_pretrain)
+        tb.add_scalar('advantage', advantage.mean(), iteration+iteration_pretrain)
+        tb.add_scalar('ratio', ratio.mean(), iteration+iteration_pretrain)
+        tb.add_scalar('surr1', surr1.mean(), iteration+iteration_pretrain)
+        tb.add_scalar('surr2', surr2.mean(), iteration+iteration_pretrain)
+        tb.add_scalar('epoch_len', epochs_len, iteration+iteration_pretrain)
+        tb.add_scalar('reward', mean_iter_reward, iteration+iteration_pretrain)
         tb.add_scalar('reward_over_time(s)', mean_iter_reward, int(time.time() - time_start))
         iter_end_time = time.time()
         rollout_time.update(update_start_time - iter_start_time)
         update_time.update(iter_end_time - update_start_time)
-        tb.add_scalar('rollout_time', rollout_time.val, iteration)
-        tb.add_scalar('update_time', update_time.val, iteration)
+        tb.add_scalar('rollout_time', rollout_time.val, iteration+iteration_pretrain)
+        tb.add_scalar('update_time', update_time.val, iteration+iteration_pretrain)
         print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
-              .format(iteration, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
+              .format(iteration+iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
         if iteration % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
-            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration))
+            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration+iteration_pretrain))
+        # save model
+        if iteration % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
+            print("\n\nSaving training checkpoint...")
+            print("-----------------------------")
+            save_path = os.path.join("./save/model", params.prefix+'_iter_{}'.format(iteration+iteration_pretrain)+'.tar')
+            torch.save({
+                'iteration': iteration+iteration_pretrain,
+                'seed': seed,
+                'actor_state_dict': actor.state_dict(),
+                'critic_state_dict': critic.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'rolloutmem': rolloutmem,
+                'time_recorder': [rollout_time, update_time],
+            }, save_path)
+            print("Saved checkpoint to: {}".format(save_path))
+            print("-----------------------------\n\n")
+
     # >> save rollout videos
     if params.log_video:
         for i in range(3):
             log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
 
-    # >> save modle
 
