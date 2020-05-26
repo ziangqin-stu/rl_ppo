@@ -135,7 +135,7 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         raw_actions.append(raw_action)
         rewards.append(reward)
         dones.append(done)
-        log_probs.append(log_prob)
+        log_probs.append(log_prob.float())
         episode_reward = [float(reward[i]) + episode_reward[i] for i in range(len(reward))]
         # update old observation
         old_state = new_state
@@ -233,7 +233,7 @@ def train(params, pretrains=None):
         # load models
         print("\n\nLoading training checkpoint...")
         print("------------------------------")
-        load_path = os.path.join(params.pretrain_file, params.prefix+'_iter_10.tar')
+        load_path = os.path.join(params.pretrain_file, params.prefix+'_iter_100.tar')
         checkpoint = torch.load(load_path)
         seed = checkpoint['seed']
         actor.load_state_dict(checkpoint['actor_state_dict'])

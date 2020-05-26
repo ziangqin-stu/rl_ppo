@@ -98,7 +98,7 @@ def get_values_batch(rewards, discount):
 def get_entropy(logits, dist_type):
     if dist_type is 'Normal':
         mean, cov = logits[0], logits[1]
-        entropy = Normal(mean, cov).entropy()
+        entropy = Normal(mean.double(), cov.double()).entropy().float()
     else:
         entropy = Categorical(logits=logits).entropy()
     return entropy

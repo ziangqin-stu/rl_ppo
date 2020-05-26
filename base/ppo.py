@@ -45,9 +45,9 @@ parser.add_argument('--lambd', help='GAE lambda')
 args = parser.parse_args()
 
 
-# =======================
+# =====================================================
 # Read Training Parameters from File / Update by Inputs
-# =======================
+# =====================================================
 def load_params(index):
     f = open('./train_param.csv', 'r')
     true_list = ['True', 'TRUE', 'true']

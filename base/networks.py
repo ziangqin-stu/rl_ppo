@@ -132,7 +132,7 @@ class ActorContinueFC(nn.Module):
 
     def gen_action(self, state):
         mean, cov = self.forward(state)
-        dist = Normal(mean, cov)
+        dist = Normal(mean.double(), cov.double())
         raw_action = dist.sample()
         action = self.scale * torch.tanh(raw_action)
         log_prob = get_norm_log_prob([mean, cov], raw_action, self.scale, dist_type='Normal')
@@ -309,7 +309,7 @@ class ActorDiscreteCNN(CNNDiscreteNet):
         dist = Categorical(logits=logits)
         raw_action = dist.sample()
         action = self.scale * raw_action
-        log_prob = dist.log_prob(raw_action)
+        log_prob = dist.log_prob(raw_action.double())
         return action, log_prob, raw_action
 
     def policy_out(self, state):
@@ -334,12 +334,12 @@ def get_norm_log_prob(logits, raw_actions, scale, dist_type):
         mean, cov = logits[0], logits[1]
         action_batch = scale * torch.tanh(raw_actions)
         log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6) \
-                   + Normal(mean, cov).log_prob(raw_actions)
+                   + Normal(mean.double(), cov.double()).log_prob(raw_actions)
         # log_prob = torch.prod(log_prob, dim=1)[:, None]
     elif dist_type is 'Categorical':
         # Categorical.log_prob accepts tight-dimension data, return 1-dimension tensor when received batch input,
         #   use "view(-1)" to unbox input data
-        log_prob = Categorical(logits=logits).log_prob(raw_actions.view(-1))
+        log_prob = Categorical(logits=logits.double()).log_prob(raw_actions.view(-1))
         # add redundant dimension for standardization in project when return batch data
         if log_prob.shape[0] > 1:
             log_prob = log_prob[:, None]
