@@ -257,12 +257,15 @@ def train(params, pretrains=None):
         update_time.update(iter_end_time - update_start_time)
         tb.add_scalar('rollout_time', rollout_time.val, iteration)
         tb.add_scalar('update_time', update_time.val, iteration)
-        print('it {}: avgR: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
-              .format(iteration, mean_iter_reward, rollout_time.val, update_time.val))
+        print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
+              .format(iteration, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
         if iteration % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
             log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration))
-    # save rollout videos
+    # >> save rollout videos
     if params.log_video:
         for i in range(3):
             log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
+
+    # >> save modle
+

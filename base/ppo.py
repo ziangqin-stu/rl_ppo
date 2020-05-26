@@ -24,18 +24,18 @@ parser.add_argument('--log_video', type=bool, help='specify if save episode vide
 parser.add_argument('--plotting_iters', type=int, help='video saving interval')
 # >> algorithm training settings
 parser.add_argument('--iter_num', type=int, help='training iter length')
-parser.add_argument('--seed', help='training seed (experimental)')
+parser.add_argument('--seed', type=int, help='training seed (experimental)')
 parser.add_argument('--reducing_entro_loss', type=bool,
                     help='specify if apply entropy coefficient discount during training')
 # >> algorithm detailed settings
-parser.add_argument('--learning_rate', help='optimizer learning rate')
-parser.add_argument('--hidden_dim', help='fully connected network hidden dimension')
+parser.add_argument('--learning_rate', type=float, help='optimizer learning rate')
+parser.add_argument('--hidden_dim', type=int, help='fully connected network hidden dimension')
 parser.add_argument('--envs_num', type=int, help='(parallel) interacting environment number')
 parser.add_argument('--horizon', type=int, help='max episode steps during training')
-parser.add_argument('--batch_size', help='sampling size during policy update')
-parser.add_argument('--epochs_num', help='policy update number in each iteration')
-parser.add_argument('--critic_coef', help='critic loss coefficient')
-parser.add_argument('--entropy_coef', help='entropy loss coefficient')
+parser.add_argument('--batch_size', type=int, help='sampling size during policy update')
+parser.add_argument('--epochs_num', type=int, help='policy update number in each iteration')
+parser.add_argument('--critic_coef', type=float, help='critic loss coefficient')
+parser.add_argument('--entropy_coef', type=float, help='entropy loss coefficient')
 # >> stable parameters
 parser.add_argument('--clip_param', help='PPO clip parameter')
 parser.add_argument('--discount', help='episode reward discount')
