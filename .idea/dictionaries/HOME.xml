@@ -1,28 +1,17 @@
 <component name="ProjectDictionaryState">
   <dictionary name="HOME">
     <words>
-      <w>classiccontrol</w>
       <w>coef</w>
-      <w>conv</w>
       <w>dones</w>
       <w>entro</w>
-      <w>envnames</w>
       <w>iters</w>
       <w>lambd</w>
       <w>logits</w>
-      <w>minigrid</w>
-      <w>mujoco</w>
       <w>pretrain</w>
       <w>pretrained</w>
-      <w>pretrains</w>
       <w>probs</w>
-      <w>pythonhashseed</w>
       <w>rollout</w>
       <w>rolloutmem</w>
-      <w>rollouts</w>
-      <w>subprocenv</w>
-      <w>unbox</w>
-      <w>vdisplay</w>
     </words>
   </dictionary>
 </component>
