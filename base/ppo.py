@@ -16,7 +16,7 @@ parser.add_argument('--param_id', default=0, type=int, help='index of parameter 
 parser.add_argument('--env_name', help='training gym environment name, check data.py for supporting environments.')
 parser.add_argument('--prefix', help='experiment prefix for savings.')
 parser.add_argument('--save_path', help='folder name of results saving.')
-parser.add_argument('--use_pretrain', '-p', help='specify if using pretrained model.')
+parser.add_argument('--use_pretrain', help='specify if using pretrained model.')
 parser.add_argument('--pretrain_file', type=str, help='folder name of pretrained model.')
 parser.add_argument('--save_checkpoint', help='specify if save checkpoint during training')
 parser.add_argument('--checkpoint_iter', type=int, help='checkpoint saving interval')
@@ -38,24 +38,60 @@ parser.add_argument('--epochs_num', type=int, help='policy update number in each
 parser.add_argument('--critic_coef', type=float, help='critic loss coefficient')
 parser.add_argument('--entropy_coef', type=float, help='entropy loss coefficient')
 # >> stable parameters
-parser.add_argument('--clip_param', help='PPO clip parameter')
-parser.add_argument('--discount', help='episode reward discount')
-parser.add_argument('--lambd', help='GAE lambda')
+parser.add_argument('--clip_param', type=float, help='PPO clip parameter')
+parser.add_argument('--discount', type=float, help='episode reward discount')
+parser.add_argument('--lambd', type=float, help='GAE lambda')
 # >> parse arguments
 args = parser.parse_args()
-
 
 # =====================================================
 # Read Training Parameters from File / Update by Inputs
 # =====================================================
+bool_params_list = ['use_pretrain', 'save_checkpoint', 'log_video', 'reducing_entro_loss']
+true_strings = ['True', 'true', 'TRUE']
+false_string = ['False', 'false', 'FALSE']
+
+
+def bool_args_preprocess(args):
+    # Handle boolean cmd args
+    global bool_params_list
+    global true_strings
+    global false_string
+    for param_name in bool_params_list:
+        param = getattr(args, param_name)
+        if param is not None:
+            if param in true_strings:
+                setattr(args, param_name, True)
+            elif param in false_string:
+                setattr(args, param_name, False)
+            else:
+                raise ValueError('Command line boolean argument typo.')
+
+
+def bool_params_preprocess(file_param):
+    # Handle boolean cmd args
+    global bool_params_list
+    global true_strings
+    global false_string
+    for param_name in bool_params_list:
+        param = file_param[param_name]
+        if param is not None:
+            if param in true_strings:
+                file_param[param_name] = True
+            elif param in false_string:
+                file_param[param_name] = False
+            else:
+                raise ValueError('CSV boolean argument typo.')
+
+
 def load_params(index):
     f = open('./train_param.csv', 'r')
-    true_list = ['True', 'TRUE', 'true']
-    false_list = ['False', 'FALSE', 'false']
     with f:
         reader = csv.DictReader(f)
         rows = [row for row in reader]
         file_param = rows[index]
+        bool_args_preprocess(args)
+        bool_params_preprocess(file_param)
         policy_params = ParamDict(
             hidden_dim=args.hidden_dim if args.hidden_dim is not None else int(file_param['hidden_dim']),
             learning_rate=args.learning_rate if args.learning_rate is not None else float(file_param['learning_rate']),
@@ -74,19 +110,20 @@ def load_params(index):
             env_name=args.env_name if args.env_name is not None else file_param['env_name'],
             prefix=args.prefix if args.prefix is not None else file_param['prefix'],
             save_path=args.save_path if args.save_path is not None else file_param['save_path'],
-            use_pretrain=args.use_pretrain if args.use_pretrain in true_list else file_param['use_pretrain'] in true_list,
+            use_pretrain=args.use_pretrain if args.use_pretrain is not None else file_param[
+                'use_pretrain'],
             pretrain_file=args.pretrain_file if args.pretrain_file is not None else file_param['pretrain_file'],
             save_checkpoint=args.save_checkpoint if args.save_checkpoint is not None else file_param['save_checkpoint'],
             checkpoint_iter=args.checkpoint_iter if args.checkpoint_iter is not None else file_param['checkpoint_iter'],
-            parallel=args.parallel if args.parallel in true_list else file_param['parallel'] in true_list,
-            log_video=args.log_video if args.log_video in true_list else file_param['log_video'] in true_list,
+            parallel=args.parallel if args.parallel is not None else file_param['parallel'],
+            log_video=args.log_video if args.log_video is not None else file_param['log_video'],
             plotting_iters=args.plotting_iters if args.plotting_iters is not None else int(
                 file_param['plotting_iters']),
             iter_num=args.iter_num if args.iter_num is not None else int(file_param['iter_num']),
             seed=args.seed if args.seed is not None else int(file_param['seed']),
-            reducing_entro_loss=args.reducing_entro_loss if args.reducing_entro_loss in true_list else file_param['reducing_entro_loss'] in true_list
+            reducing_entro_loss=args.reducing_entro_loss if args.reducing_entro_loss is not None else file_param[
+                'reducing_entro_loss']
         )
-    # print(">>>>>>>"+str(params.use_pretrain)+"  "+str(args.use_pretrain))
     return params, policy_params
 
 

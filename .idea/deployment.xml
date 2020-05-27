@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ziang@10.136.108.176:22" createEmptyFolders="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="lim004" createEmptyFolders="true">
     <serverData>
-      <paths name="ziang@10.136.108.176:22">
+      <paths name="lim001">
         <serverdata>
           <mappings>
             <mapping deploy="/home/ziang/work_space/sandbox/ppo/impl_ppo" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="lim004">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/ziang/workspace/impl_ppo" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

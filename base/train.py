@@ -170,7 +170,7 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         first_done = (dones[i] > 0).nonzero().min()
         rolloutmem.append(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
                           raw_actions[i][:first_done + 1], rewards[i][:first_done + 1], dones[i][:first_done + 1],
-                          log_probs[i][:first_done + 1], advantages[i][:first_done + 1], values[i][:first_done + 1])
+                          log_probs[i][:first_done + 1], advantages[:first_done + 1], values[:first_done + 1])
     return torch.mean(torch.Tensor(episode_reward))
 
 
@@ -245,7 +245,7 @@ def train(params, pretrains=None):
         # load models
         print("\n\nLoading training checkpoint...")
         print("------------------------------")
-        load_path = os.path.join(params.pretrain_file, params.prefix+'_iter_100.tar')
+        load_path = os.path.join('./save/model', params.pretrain_file)
         checkpoint = torch.load(load_path)
         seed = checkpoint['seed']
         actor.load_state_dict(checkpoint['actor_state_dict'])
@@ -279,6 +279,8 @@ def train(params, pretrains=None):
         rolloutmem.reset()
         iter_start_time = time.time()
         mean_iter_reward = rollout(rolloutmem, envs, actor, critic, params)
+        if mean_iter_reward > 1:
+            y = 1
         # optimize by gradient descent
         update_start_time = time.time()
         loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \

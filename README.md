@@ -103,7 +103,7 @@ You can see prompts in command line to see the loading and saving process workin
 
 ### Discrete Environment:
 
-CartPole-v1
+#### CartPole-v1
 
 MountainCar-v0
 
@@ -117,11 +117,13 @@ Humanoid-v2
 
 ### Image Observation Environment:
 
-MiniGrid-Empty-5x5-v0
+#### MiniGrid-Empty-5x5-v0
 
-MiniGrid-SimpleCrossingS9N1-v0
+The simplest environment in MiniGrid series environment, run to test code correctness. The maximum episode length during training is 15steps, training converges within 100 iterations.
 
-MiniGrid-LavaGapS5-v0
+#### MiniGrid-SimpleCrossingS9N1-v0
+
+#### MiniGrid-LavaGapS5-v0
 
 ### Some Episode Videos:
 
