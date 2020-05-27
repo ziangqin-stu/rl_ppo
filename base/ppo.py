@@ -84,7 +84,6 @@ def bool_params_preprocess(file_param):
                 raise ValueError('CSV boolean argument typo.')
 
 
-
 def load_params(index):
     f = open('./train_param.csv', 'r')
     with f:
