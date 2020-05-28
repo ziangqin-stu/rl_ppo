@@ -17,14 +17,15 @@ from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_par
 @ray.remote(num_gpus=3)
 def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
     # initialize logger
-    old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward = [], [], [], [], [], [], [], 0.
+    old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, rollout_reward = [], [], [], [], [], [], [], 0.
     # collect episode
     old_obs = ray.get(env.reset.remote())
     env_attributes = ray.get(env.get_attributes.remote())
     for step in range(horizon):
         # interact with environment
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_obs).cuda())
-        assert (env_attributes['action_high'].cuda() >= action).all() and (action >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
+        assert (env_attributes['action_high'].cuda() >= action.cuda()).all() and (
+                action.cuda() >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
         [new_obs, reward, done, info] = ray.get(env.step.remote(action))
         # record trajectory step
         old_states.append(old_obs)
@@ -33,13 +34,13 @@ def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
         rewards.append(reward)
         dones.append(done)
         log_probs.append(log_prob.view(-1))
-        episode_reward += reward
+        rollout_reward += reward
         # update old observation
         old_obs = new_obs
         if done:
             break
     dones[-1] = True
-    return [old_states, new_states, raw_actions, rewards, dones, log_probs, episode_reward]
+    return [old_states, new_states, raw_actions, rewards, dones, log_probs, rollout_reward]
 
 
 def rollout_serial(rolloutmem, envs, actor, critic, params):
@@ -94,17 +95,18 @@ def rollout_parallel(rolloutmem, envs, actor, critic, params):
         [rollout_sim_single_step_parallel.remote(i, envs[i], copy.deepcopy(actor), params.policy_params.horizon)
          for i in range(params.policy_params.envs_num)])
     for episode in data:
-        old_states, new_states, raw_actions, rewards, dones, log_probs, episode_reward = \
+        old_states, new_states, raw_actions, rewards, dones, log_probs, rollout_reward = \
             torch.Tensor(episode[0]).cuda(), torch.Tensor(episode[1]).cuda(), torch.stack(episode[2]).detach().cuda(), \
             torch.Tensor(episode[3]).cuda(), torch.Tensor(episode[4]).cuda(), torch.stack(episode[5]).detach().cuda(), \
             torch.Tensor([episode[6]]).cuda()
         gae_deltas = critic.gae_delta(old_states, new_states, rewards, params.policy_params.discount)
-        advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd).detach().cuda()
+        advantages = get_advantage_new(gae_deltas, params.policy_params.discount,
+                                       params.policy_params.lambd).detach().cuda()
         values = get_values(rewards, params.policy_params.discount).cuda()
         if len(advantages.shape) == 1: advantages = advantages[:, None]
         if len(values.shape) == 1: values = values[:, None]
         rolloutmem.append(old_states, new_states, raw_actions, rewards, dones, log_probs, advantages, values)
-        episodes_rewards.append(episode_reward)
+        episodes_rewards.append(rollout_reward)
     return torch.mean(torch.Tensor(episodes_rewards))
 
 
@@ -115,14 +117,15 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     # interact
     env_number = len(envs)
     env_attributes = ray.get(envs[0].get_attributes.remote())
-    old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, episode_reward \
-        = [], [], [], [], [], [], [], [0] * env_number
+    old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, rollout_reward, episode_number \
+        = [], [], [], [], [], [], [], [0] * env_number, [0] * env_number
     old_state = ray.get([env.reset.remote() for env in envs])
     rolloutmem.reset()
     for step in range(params.policy_params.horizon):
         # interact
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
-        assert (env_attributes['action_high'].cuda() >= action).all() and (action >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
+        assert (env_attributes['action_high'].cuda() >= action.cuda()).all() and (
+                action.cuda() >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
         # print("    >> action: {}".format(action))
         step_obs_batch = ray.get(
             [envs[i].step.remote(action[i].cpu()) for i in range(env_number)])  # new_obs, reward, done, info
@@ -137,11 +140,12 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         rewards.append(reward)
         dones.append(done)
         log_probs.append(log_prob.float())
-        episode_reward = [float(reward[i]) + episode_reward[i] for i in range(len(reward))]
+        rollout_reward = [float(reward[i]) + rollout_reward[i] for i in range(len(reward))]
+        episode_number = [float(done[i]) + episode_number[i] for i in range(len(done))]
         # update old observation
         old_state = new_state
-        if np.array(done).all():
-            break
+        for ind in [int(i) for i in list((torch.Tensor(done) == 1).nonzero())]:
+            state = ray.get(envs[ind].reset.remote())
     dones[-1] = [True] * env_number
     if env_attributes['image_obs']:
         old_states = torch.Tensor(old_states).permute(1, 0, 2, 3, 4).cuda()
@@ -157,35 +161,36 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         rewards = torch.Tensor(rewards).permute(1, 0).cuda()
         dones = torch.Tensor(dones).permute(1, 0).cuda()
         log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
-
-    # gae_deltas = critic.gae_delta(old_states, new_states, rewards, .99).cuda()
-    # advantages = get_advantage_new(gae_deltas, .99, .95).detach().cuda()[:, :, None]
-    # values = get_values(rewards, .99).cuda()[:, :, None]
-    # rolloutmem.append(old_states, new_states, raw_actions, rewards, dones, log_probs, advantages, values)
     for i in range(env_number):
         gae_deltas = critic.gae_delta(old_states[i], new_states[i], rewards[i], .99).cuda()
         advantages = get_advantage_new(gae_deltas, .99, .95)[:, None].detach().cuda()
         values = get_values(rewards[i], .99)[:, None].cuda()
         # abandon redundant step info
-        first_done = (dones[i] > 0).nonzero().min()
-        rolloutmem.append(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
-                          raw_actions[i][:first_done + 1], rewards[i][:first_done + 1], dones[i][:first_done + 1],
-                          log_probs[i][:first_done + 1], advantages[:first_done + 1], values[:first_done + 1])
-    return torch.mean(torch.Tensor(episode_reward))
+        # first_done = (dones[i] > 0).nonzero().min()
+        # rolloutmem.append(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
+        #                   raw_actions[i][:first_done + 1], rewards[i][:first_done + 1], dones[i][:first_done + 1],
+        #                   log_probs[i][:first_done + 1], advantages[:first_done + 1], values[:first_done + 1])
+        rolloutmem.append(old_states[i], new_states[i], raw_actions[i], rewards[i], dones[i], log_probs[i], advantages, values)
+
+    # if env_attributes['final_reward']:
+    #     return torch.mean(torch.Tensor(rollout_reward)) / max(torch.mean(torch.Tensor(episode_number)), torch.Tensor([1.]))
+    # else:
+    #     return torch.mean(torch.Tensor(rollout_reward))
+    return torch.mean(torch.Tensor(rollout_reward)) / max(torch.mean(torch.Tensor(episode_number)), torch.Tensor([1.]))
 
 
 def rollout(rolloutmem, envs, actor, critic, params):
     if params.parallel:
-        # mean_episode_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
-        mean_episode_reward = parallel_rollout_env(rolloutmem, envs, actor, critic, params)
+        # mean_rollout_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
+        mean_rollout_reward = parallel_rollout_env(rolloutmem, envs, actor, critic, params)
     else:
-        mean_episode_reward = rollout_serial(rolloutmem, envs, actor, critic, params)
-    return mean_episode_reward
+        mean_rollout_reward = rollout_serial(rolloutmem, envs, actor, critic, params)
+    return float(mean_rollout_reward)
 
 
 def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     entropy_discount = 1.
-    if params.reducing_entro_loss:
+    if params.decay_entro_loss:
         entropy_discount = 1. - iteration / params.iter_num
     # print('entropy_discount: {}'.format(entropy_discount))
     # sample rollout steps from current policy
@@ -239,8 +244,8 @@ def train(params, pretrains=None):
         np.random.seed(seed)
     else:
         # build models
-        actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
-        critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
+        actor = gen_actor(params.env_name, params.policy_params.hidden_dim).cuda()
+        critic = gen_critic(params.env_name, params.policy_params.hidden_dim).cuda()
         optimizer = torch.optim.Adam(list(actor.parameters()) + list(critic.parameters()), lr=0.0001)
         # load models
         print("\n\nLoading training checkpoint...")
@@ -279,8 +284,6 @@ def train(params, pretrains=None):
         rolloutmem.reset()
         iter_start_time = time.time()
         mean_iter_reward = rollout(rolloutmem, envs, actor, critic, params)
-        if mean_iter_reward > 1:
-            y = 1
         # optimize by gradient descent
         update_start_time = time.time()
         loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \
@@ -288,34 +291,35 @@ def train(params, pretrains=None):
         for epoch in range(params.policy_params.epochs_num):
             loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \
                 optimize_step(optimizer, rolloutmem, actor, critic, params, iteration)
-        tb.add_scalar('loss', loss, iteration+iteration_pretrain)
-        tb.add_scalar('policy_loss', -1 * policy_loss, iteration+iteration_pretrain)
-        tb.add_scalar('critic_loss', critic_loss, iteration+iteration_pretrain)
-        tb.add_scalar('entropy_loss', -1 * entropy_loss, iteration+iteration_pretrain)
-        tb.add_scalar('advantage', advantage.mean(), iteration+iteration_pretrain)
-        tb.add_scalar('ratio', ratio.mean(), iteration+iteration_pretrain)
-        tb.add_scalar('surr1', surr1.mean(), iteration+iteration_pretrain)
-        tb.add_scalar('surr2', surr2.mean(), iteration+iteration_pretrain)
-        tb.add_scalar('epoch_len', epochs_len, iteration+iteration_pretrain)
-        tb.add_scalar('reward', mean_iter_reward, iteration+iteration_pretrain)
+        tb.add_scalar('loss', loss, iteration + iteration_pretrain)
+        tb.add_scalar('policy_loss', -1 * policy_loss, iteration + iteration_pretrain)
+        tb.add_scalar('critic_loss', critic_loss, iteration + iteration_pretrain)
+        tb.add_scalar('entropy_loss', -1 * entropy_loss, iteration + iteration_pretrain)
+        tb.add_scalar('advantage', advantage.mean(), iteration + iteration_pretrain)
+        tb.add_scalar('ratio', ratio.mean(), iteration + iteration_pretrain)
+        tb.add_scalar('surr1', surr1.mean(), iteration + iteration_pretrain)
+        tb.add_scalar('surr2', surr2.mean(), iteration + iteration_pretrain)
+        tb.add_scalar('epoch_len', epochs_len, iteration + iteration_pretrain)
+        tb.add_scalar('reward', mean_iter_reward, iteration + iteration_pretrain)
         tb.add_scalar('reward_over_time(s)', mean_iter_reward, int(time.time() - time_start))
         iter_end_time = time.time()
         rollout_time.update(update_start_time - iter_start_time)
         update_time.update(iter_end_time - update_start_time)
-        tb.add_scalar('rollout_time', rollout_time.val, iteration+iteration_pretrain)
-        tb.add_scalar('update_time', update_time.val, iteration+iteration_pretrain)
+        tb.add_scalar('rollout_time', rollout_time.val, iteration + iteration_pretrain)
+        tb.add_scalar('update_time', update_time.val, iteration + iteration_pretrain)
         print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
-              .format(iteration+iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
+              .format(iteration + iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
         if iteration % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
-            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration+iteration_pretrain))
+            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
         # save model
         if iteration % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
             print("\n\nSaving training checkpoint...")
             print("-----------------------------")
-            save_path = os.path.join("./save/model", params.prefix+'_iter_{}'.format(iteration+iteration_pretrain)+'.tar')
+            save_path = os.path.join("./save/model",
+                                     params.prefix + '_iter_{}'.format(iteration + iteration_pretrain) + '.tar')
             torch.save({
-                'iteration': iteration+iteration_pretrain,
+                'iteration': iteration + iteration_pretrain,
                 'seed': seed,
                 'actor_state_dict': actor.state_dict(),
                 'critic_state_dict': critic.state_dict(),
@@ -329,5 +333,3 @@ def train(params, pretrains=None):
     if params.log_video:
         for i in range(3):
             log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
-
-

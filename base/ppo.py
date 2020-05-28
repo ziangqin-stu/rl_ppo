@@ -27,7 +27,7 @@ parser.add_argument('--plotting_iters', type=int, help='video saving interval')
 # >> algorithm training settings
 parser.add_argument('--iter_num', type=int, help='training iter length')
 parser.add_argument('--seed', type=int, help='training seed (experimental)')
-parser.add_argument('--reducing_entro_loss', help='specify if apply entropy coefficient discount during training')
+parser.add_argument('--decay_entro_loss', help='specify if apply entropy coefficient discount during training')
 # >> algorithm detailed settings
 parser.add_argument('--learning_rate', type=float, help='optimizer learning rate')
 parser.add_argument('--hidden_dim', type=int, help='fully connected network hidden dimension')
@@ -47,7 +47,7 @@ args = parser.parse_args()
 # =====================================================
 # Read Training Parameters from File / Update by Inputs
 # =====================================================
-bool_params_list = ['use_pretrain', 'save_checkpoint', 'log_video', 'reducing_entro_loss']
+bool_params_list = ['use_pretrain', 'save_checkpoint', 'log_video', 'decay_entro_loss']
 true_strings = ['True', 'true', 'TRUE']
 false_string = ['False', 'false', 'FALSE']
 
@@ -121,8 +121,8 @@ def load_params(index):
                 file_param['plotting_iters']),
             iter_num=args.iter_num if args.iter_num is not None else int(file_param['iter_num']),
             seed=args.seed if args.seed is not None else int(file_param['seed']),
-            reducing_entro_loss=args.reducing_entro_loss if args.reducing_entro_loss is not None else file_param[
-                'reducing_entro_loss']
+            decay_entro_loss=args.decay_entro_loss if args.decay_entro_loss is not None else file_param[
+                'decay_entro_loss']
         )
     return params, policy_params
 

@@ -8,23 +8,19 @@ see this [[README writing tutorial](https://gist.github.com/PurpleBooth/109311bb
 
 > Instruction of how to download and test this code base
 
-### Prerequisites
+Make sure your machine is using cuda, then clone the code base to local:
 
-> Requirements before going to package installation
+`git clone https://github.com/ziangqin-stu/impl_ppo.git `
 
-### Installing
+Install necessary python packages:
 
-> Step-by-step instruction of how to install from scratch, end with a tiny system test
+` pip install -r requirements.txt`
 
-### Running Test
-
-> Running a simple(interesting) test for showing it works
+Run a simple experiment (cart pole) to check every thing going well:
 
 ```python
 python ppo.py --param_id=0
 ```
-
-
 
 ## Code Running Guide
 
@@ -109,23 +105,43 @@ MountainCar-v0
 
 ### Continuous Environment:
 
-InvertedPendulum-v2
+#### InvertedPendulum-v2
 
-Hopper-v2
+The simplest environment in MuJoCo environments. Using continuous action space.
 
-Humanoid-v2
+#### Hopper-v2
+
+#### Humanoid-v2
 
 ### Image Observation Environment:
 
 #### MiniGrid-Empty-5x5-v0
 
-The simplest environment in MiniGrid series environment, run to test code correctness. The maximum episode length during training is 15steps, training converges within 100 iterations.
+The simplest environment in MiniGrid series environment, run to test code correctness. The maximum episode length during training is 15 steps, episode steps reaches its minimum(5 steps) in about100 iterations. The entire training process last for 40 minutes.
+
+<p>
+    <img src=".\readme_data\image\demo_minigrid-empty5_reward.png" alt="reward curve" width="395"/>
+    <img src=".\readme_data\image\demo_minigrid-empty5_episode.png" alt="reward curve" width="395"/>
+</p>
+
+#### MiniGrid-Empty-16x16-v0
+
+Bigger empty environment, also works. The maximum episode length during training is 200 steps, algorithm learns quick in first 10 iterations then generally reaches minimal episode step number of 27 steps.
 
 #### MiniGrid-SimpleCrossingS9N1-v0
 
 #### MiniGrid-LavaGapS5-v0
 
-### Some Episode Videos:
+### Rollout Episode Videos:
+
+<div style="display:flex;">
+    <div style="display:flex; margin:auto;">
+        <video src=".\readme_data\video\demo_invertedpendulum.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+        <video source src=".\readme_data\video\demo_minigrid-empty5.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+    </div>
+</div>
+
+
 
 ## Develop Experience: Take Homes
 
