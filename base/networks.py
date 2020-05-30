@@ -84,7 +84,9 @@ class ActorContinueFC(nn.Module):
         self.mean_fc5 = nn.Linear(hidden_dim, hidden_dim)
         self.mean_fc6 = nn.Linear(hidden_dim, hidden_dim)
         self.mean_fc7 = nn.Linear(hidden_dim, hidden_dim)
-        self.mean_fc8 = nn.Linear(hidden_dim, output_size)
+        self.mean_fc8 = nn.Linear(hidden_dim, hidden_dim)
+        self.mean_fc9 = nn.Linear(hidden_dim, hidden_dim)
+        self.mean_fc10 = nn.Linear(hidden_dim, output_size)
         # covariance
         self.cov_fc1 = nn.Linear(input_size, hidden_dim // 2)
         self.cov_fc2 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
@@ -92,7 +94,10 @@ class ActorContinueFC(nn.Module):
         self.cov_fc4 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
         self.cov_fc5 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
         self.cov_fc6 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
-        self.cov_fc7 = nn.Linear(hidden_dim // 2, output_size)
+        self.cov_fc7 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
+        self.cov_fc8 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
+        self.cov_fc9 = nn.Linear(hidden_dim // 2, hidden_dim // 2)
+        self.cov_fc10 = nn.Linear(hidden_dim // 2, output_size)
         # action scale
         self.scale = torch.tensor([action_scale]).float().cuda()
         # initialize network parameters
@@ -104,6 +109,8 @@ class ActorContinueFC(nn.Module):
         nn.init.orthogonal_(self.mean_fc6.weight)
         nn.init.orthogonal_(self.mean_fc7.weight)
         nn.init.orthogonal_(self.mean_fc8.weight)
+        nn.init.orthogonal_(self.mean_fc9.weight)
+        nn.init.orthogonal_(self.mean_fc10.weight)
         nn.init.orthogonal_(self.cov_fc1.weight)
         nn.init.orthogonal_(self.cov_fc2.weight)
         nn.init.orthogonal_(self.cov_fc3.weight)
@@ -111,6 +118,9 @@ class ActorContinueFC(nn.Module):
         nn.init.orthogonal_(self.cov_fc5.weight)
         nn.init.orthogonal_(self.cov_fc6.weight)
         nn.init.orthogonal_(self.cov_fc7.weight)
+        nn.init.orthogonal_(self.cov_fc8.weight)
+        nn.init.orthogonal_(self.cov_fc9.weight)
+        nn.init.orthogonal_(self.cov_fc10.weight)
 
     def forward(self, state):
         mean = torch.relu(self.mean_fc1(state))
@@ -120,14 +130,20 @@ class ActorContinueFC(nn.Module):
         mean = torch.relu(self.mean_fc5(mean))
         mean = torch.relu(self.mean_fc6(mean))
         mean = torch.relu(self.mean_fc7(mean))
-        mean = self.mean_fc8(mean)
+        mean = torch.relu(self.mean_fc8(mean))
+        mean = torch.relu(self.mean_fc9(mean))
+        mean = self.mean_fc10(mean)
         cov = torch.relu(self.cov_fc1(state))
         cov = torch.relu(self.cov_fc2(cov))
         cov = torch.relu(self.cov_fc3(cov))
         cov = torch.relu(self.cov_fc4(cov))
         cov = torch.relu(self.cov_fc5(cov))
         cov = torch.relu(self.cov_fc6(cov))
-        cov = torch.exp(self.cov_fc7(cov))
+        cov = torch.relu(self.cov_fc7(cov))
+        cov = torch.relu(self.cov_fc8(cov))
+        cov = torch.relu(self.cov_fc9(cov))
+        cov = torch.exp(self.cov_fc10(cov))
+        cov = torch.clamp(cov, 1e-6, 1.0e30)
         return mean, cov
 
     def gen_action(self, state):
@@ -140,7 +156,8 @@ class ActorContinueFC(nn.Module):
 
     def policy_out(self, state):
         mean, cov = self.forward(state)
-        return mean, cov
+        cov = torch.clamp(cov, 1e-6, 1.0e30)
+        return mean.double(), cov.double()
 
 
 class CriticFC(nn.Module):
@@ -153,8 +170,10 @@ class CriticFC(nn.Module):
         self.fc4 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
         self.fc5 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
         self.fc6 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
-        self.fc7 = nn.Linear(2 * hidden_dim, hidden_dim)
-        self.fc8 = nn.Linear(hidden_dim, 1)
+        self.fc7 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
+        self.fc8 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
+        self.fc9 = nn.Linear(2 * hidden_dim, hidden_dim)
+        self.fc10 = nn.Linear(hidden_dim, 1)
         # initialize network parameters
         nn.init.orthogonal_(self.fc1.weight)
         nn.init.orthogonal_(self.fc2.weight)
@@ -164,6 +183,8 @@ class CriticFC(nn.Module):
         nn.init.orthogonal_(self.fc6.weight)
         nn.init.orthogonal_(self.fc7.weight)
         nn.init.orthogonal_(self.fc8.weight)
+        nn.init.orthogonal_(self.fc9.weight)
+        nn.init.orthogonal_(self.fc10.weight)
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
@@ -173,7 +194,9 @@ class CriticFC(nn.Module):
         x = torch.relu(self.fc5(x))
         x = torch.relu(self.fc6(x))
         x = torch.relu(self.fc7(x))
-        x = self.fc8(x)
+        x = torch.relu(self.fc8(x))
+        x = torch.relu(self.fc9(x))
+        x = self.fc10(x)
         return x
 
     def gae_delta(self, old_state, new_state, rewards, discount):
@@ -333,6 +356,7 @@ class CriticCNN(CNNDiscreteNet):
 
     def gae_delta(self, old_state, new_state, rewards, discount):
         return rewards + discount * self.forward(new_state).view(-1) - self.forward(old_state).view(-1)
+
 
 def get_norm_log_prob(logits, raw_actions, scale, dist_type):
     log_prob = None

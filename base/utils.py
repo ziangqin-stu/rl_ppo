@@ -23,7 +23,7 @@ def gen_env(env_name):
 def gen_actor(env_name, hidden_dim):
     # environment specific parameters
     env = gen_env(env_name)
-    action_scale = env.action_space.high if hasattr(env.action_space, 'high') else 1
+    action_scale = env.action_space.high if hasattr(env.action_space, 'high') else 1.
     # generate actor by environment name
     if env_name in envnames_mujoco:
         return ActorContinueFC(input_size=env.observation_space.shape[0],
@@ -138,6 +138,69 @@ def log_policy_rollout(params, actor, env_name, video_name):
     print('Finished Sampling, saved video in {}.\n'.format(save_path_name))
 
 
+def logger_scalar(tb, index, loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len,
+                  mean_iter_reward, time_start):
+    tb.add_scalar('loss', loss, index)
+    tb.add_scalar('policy_loss', -1 * policy_loss, index)
+    tb.add_scalar('critic_loss', critic_loss, index)
+    tb.add_scalar('entropy_loss', -1 * entropy_loss, index)
+    tb.add_scalar('advantage', advantage.mean(), index)
+    tb.add_scalar('ratio', ratio.mean(), index)
+    tb.add_scalar('surr1', surr1.mean(), index)
+    tb.add_scalar('surr2', surr2.mean(), index)
+    tb.add_scalar('episode_len', epochs_len, index)
+    tb.add_scalar('reward', mean_iter_reward, index)
+    tb.add_scalar('reward_over_time(s)', mean_iter_reward, int(time.time() - time_start))
+    return tb
+
+
+def logger_histogram(tb, index, actor, critic):
+    # histogram
+    # actor w
+    tb.add_histogram('actor_cov_fc1_w', actor.cov_fc1.weight, index)
+    tb.add_histogram('actor_cov_fc2_w', actor.cov_fc2.weight, index)
+    tb.add_histogram('actor_cov_fc3_w', actor.cov_fc3.weight, index)
+    tb.add_histogram('actor_cov_fc4_w', actor.cov_fc4.weight, index)
+    tb.add_histogram('actor_cov_fc5_w', actor.cov_fc5.weight, index)
+    tb.add_histogram('actor_cov_fc6_w', actor.cov_fc6.weight, index)
+    tb.add_histogram('actor_cov_fc7_w', actor.cov_fc7.weight, index)
+    tb.add_histogram('actor_cov_fc8_w', actor.cov_fc8.weight, index)
+    tb.add_histogram('actor_cov_fc9_w', actor.cov_fc9.weight, index)
+    tb.add_histogram('actor_cov_fc10_w', actor.cov_fc10.weight, index)
+    tb.add_histogram('actor_cov_fc1_w_g', actor.cov_fc1.weight.grad, index)
+    tb.add_histogram('actor_cov_fc2_w_g', actor.cov_fc2.weight.grad, index)
+    tb.add_histogram('actor_cov_fc3_w_g', actor.cov_fc3.weight.grad, index)
+    tb.add_histogram('actor_cov_fc4_w_g', actor.cov_fc4.weight.grad, index)
+    tb.add_histogram('actor_cov_fc5_w_g', actor.cov_fc5.weight.grad, index)
+    tb.add_histogram('actor_cov_fc6_w_g', actor.cov_fc6.weight.grad, index)
+    tb.add_histogram('actor_cov_fc7_w_g', actor.cov_fc7.weight.grad, index)
+    tb.add_histogram('actor_cov_fc8_w_g', actor.cov_fc8.weight.grad, index)
+    tb.add_histogram('actor_cov_fc9_w_g', actor.cov_fc9.weight.grad, index)
+    tb.add_histogram('actor_cov_fc10_w_g', actor.cov_fc10.weight.grad, index)
+    # actor b
+    tb.add_histogram('actor_cov_fc1_b', actor.cov_fc1.bias, index)
+    tb.add_histogram('actor_cov_fc2_b', actor.cov_fc2.bias, index)
+    tb.add_histogram('actor_cov_fc3_b', actor.cov_fc3.bias, index)
+    tb.add_histogram('actor_cov_fc4_b', actor.cov_fc4.bias, index)
+    tb.add_histogram('actor_cov_fc5_b', actor.cov_fc5.bias, index)
+    tb.add_histogram('actor_cov_fc6_b', actor.cov_fc6.bias, index)
+    tb.add_histogram('actor_cov_fc7_b', actor.cov_fc7.bias, index)
+    tb.add_histogram('actor_cov_fc8_b', actor.cov_fc8.bias, index)
+    tb.add_histogram('actor_cov_fc9_b', actor.cov_fc9.bias, index)
+    tb.add_histogram('actor_cov_fc10_b', actor.cov_fc10.bias, index)
+    tb.add_histogram('actor_cov_fc1_b_g', actor.cov_fc1.bias.grad, index)
+    tb.add_histogram('actor_cov_fc2_b_g', actor.cov_fc2.bias.grad, index)
+    tb.add_histogram('actor_cov_fc3_b_g', actor.cov_fc3.bias.grad, index)
+    tb.add_histogram('actor_cov_fc4_b_g', actor.cov_fc4.bias.grad, index)
+    tb.add_histogram('actor_cov_fc5_b_g', actor.cov_fc5.bias.grad, index)
+    tb.add_histogram('actor_cov_fc6_b_g', actor.cov_fc6.bias.grad, index)
+    tb.add_histogram('actor_cov_fc7_b_g', actor.cov_fc7.bias.grad, index)
+    tb.add_histogram('actor_cov_fc8_b_g', actor.cov_fc8.bias.grad, index)
+    tb.add_histogram('actor_cov_fc9_b_g', actor.cov_fc9.bias.grad, index)
+    tb.add_histogram('actor_cov_fc10_b_g', actor.cov_fc10.bias.grad, index)
+    return tb
+
+
 @ray.remote
 class ParallelEnv:
     def __init__(self, env_name, id):
@@ -148,9 +211,12 @@ class ParallelEnv:
             'image_obs': self.env.spec.id in envnames_minigrid,
             'final_reward': self.env.spec.id in envnames_minigrid,
             'max_episode_steps': self.env.spec.max_episode_steps,  # int
-            'action_high': torch.Tensor(self.env.action_space.high) if hasattr(self.env.action_space, 'high') else torch.Tensor(
+            'action_high': torch.Tensor(self.env.action_space.high) if hasattr(self.env.action_space,
+                                                                               'high') else torch.Tensor(
                 [float('inf')]),  # Torch
-            'action_low': torch.Tensor(self.env.action_space.low) if hasattr(self.env.action_space, 'low') else torch.Tensor([float('-inf')]), # Torch
+            'action_low': torch.Tensor(self.env.action_space.low) if hasattr(self.env.action_space,
+                                                                             'low') else torch.Tensor([float('-inf')]),
+            # Torch
             'action_type': {'shape': self.env.action_space.shape,
                             'data_type': type(self.env.action_space.sample())}
         }

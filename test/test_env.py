@@ -1,6 +1,6 @@
 import gym
 from gym_minigrid.wrappers import *
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -37,4 +37,4 @@ def test_env_nan(env_name, step):
         step -= 1
 
 
-test_env_nan('Hopper-v2', 100)
+test_env_nan('Humanoid-v2', 100)
