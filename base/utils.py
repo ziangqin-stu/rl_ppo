@@ -1,5 +1,7 @@
 import os
 import time
+
+import copy
 import torch
 from gym.wrappers import Monitor
 from gym_minigrid.wrappers import *
@@ -124,16 +126,17 @@ def log_policy_rollout(params, actor, env_name, video_name):
     episode_length = 0.
     action_list = []
     observation = env.reset()
-    print('Sampling trajectory...')
+    print('\n    > Sampling trajectory...')
     while not done:
         action = actor.gen_action(torch.tensor(observation, dtype=torch.float32).cuda())[0]
         action_list.append(action)
         observation, reward, done, info = env.step(action)
         episode_reward += reward
         episode_length += 1
-    print("Action Series: {}".format(action_list))
-    print('Total reward:', episode_reward)
-    print('Total length:', episode_length)
+    # print("Action Series: {}".format(action_list))
+    print('    > Total reward:', episode_reward)
+    print('    > Total length:', episode_length)
+    print('------------------------------------')
     env.close()
     print('Finished Sampling, saved video in {}.\n'.format(save_path_name))
 
@@ -155,50 +158,83 @@ def logger_scalar(tb, index, loss, policy_loss, critic_loss, entropy_loss, advan
 
 
 def logger_histogram(tb, index, actor, critic):
-    # histogram
-    # actor w
-    tb.add_histogram('actor_cov_fc1_w', actor.cov_fc1.weight, index)
-    tb.add_histogram('actor_cov_fc2_w', actor.cov_fc2.weight, index)
-    tb.add_histogram('actor_cov_fc3_w', actor.cov_fc3.weight, index)
-    tb.add_histogram('actor_cov_fc4_w', actor.cov_fc4.weight, index)
-    tb.add_histogram('actor_cov_fc5_w', actor.cov_fc5.weight, index)
-    tb.add_histogram('actor_cov_fc6_w', actor.cov_fc6.weight, index)
-    tb.add_histogram('actor_cov_fc7_w', actor.cov_fc7.weight, index)
-    tb.add_histogram('actor_cov_fc8_w', actor.cov_fc8.weight, index)
-    tb.add_histogram('actor_cov_fc9_w', actor.cov_fc9.weight, index)
-    tb.add_histogram('actor_cov_fc10_w', actor.cov_fc10.weight, index)
-    tb.add_histogram('actor_cov_fc1_w_g', actor.cov_fc1.weight.grad, index)
-    tb.add_histogram('actor_cov_fc2_w_g', actor.cov_fc2.weight.grad, index)
-    tb.add_histogram('actor_cov_fc3_w_g', actor.cov_fc3.weight.grad, index)
-    tb.add_histogram('actor_cov_fc4_w_g', actor.cov_fc4.weight.grad, index)
-    tb.add_histogram('actor_cov_fc5_w_g', actor.cov_fc5.weight.grad, index)
-    tb.add_histogram('actor_cov_fc6_w_g', actor.cov_fc6.weight.grad, index)
-    tb.add_histogram('actor_cov_fc7_w_g', actor.cov_fc7.weight.grad, index)
-    tb.add_histogram('actor_cov_fc8_w_g', actor.cov_fc8.weight.grad, index)
-    tb.add_histogram('actor_cov_fc9_w_g', actor.cov_fc9.weight.grad, index)
-    tb.add_histogram('actor_cov_fc10_w_g', actor.cov_fc10.weight.grad, index)
-    # actor b
-    tb.add_histogram('actor_cov_fc1_b', actor.cov_fc1.bias, index)
-    tb.add_histogram('actor_cov_fc2_b', actor.cov_fc2.bias, index)
-    tb.add_histogram('actor_cov_fc3_b', actor.cov_fc3.bias, index)
-    tb.add_histogram('actor_cov_fc4_b', actor.cov_fc4.bias, index)
-    tb.add_histogram('actor_cov_fc5_b', actor.cov_fc5.bias, index)
-    tb.add_histogram('actor_cov_fc6_b', actor.cov_fc6.bias, index)
-    tb.add_histogram('actor_cov_fc7_b', actor.cov_fc7.bias, index)
-    tb.add_histogram('actor_cov_fc8_b', actor.cov_fc8.bias, index)
-    tb.add_histogram('actor_cov_fc9_b', actor.cov_fc9.bias, index)
-    tb.add_histogram('actor_cov_fc10_b', actor.cov_fc10.bias, index)
-    tb.add_histogram('actor_cov_fc1_b_g', actor.cov_fc1.bias.grad, index)
-    tb.add_histogram('actor_cov_fc2_b_g', actor.cov_fc2.bias.grad, index)
-    tb.add_histogram('actor_cov_fc3_b_g', actor.cov_fc3.bias.grad, index)
-    tb.add_histogram('actor_cov_fc4_b_g', actor.cov_fc4.bias.grad, index)
-    tb.add_histogram('actor_cov_fc5_b_g', actor.cov_fc5.bias.grad, index)
-    tb.add_histogram('actor_cov_fc6_b_g', actor.cov_fc6.bias.grad, index)
-    tb.add_histogram('actor_cov_fc7_b_g', actor.cov_fc7.bias.grad, index)
-    tb.add_histogram('actor_cov_fc8_b_g', actor.cov_fc8.bias.grad, index)
-    tb.add_histogram('actor_cov_fc9_b_g', actor.cov_fc9.bias.grad, index)
-    tb.add_histogram('actor_cov_fc10_b_g', actor.cov_fc10.bias.grad, index)
+    try:
+        # actor w
+        tb.add_histogram('actor_cov_fc1_w', actor.cov_fc1.weight, index)
+        tb.add_histogram('actor_cov_fc2_w', actor.cov_fc2.weight, index)
+        tb.add_histogram('actor_cov_fc3_w', actor.cov_fc3.weight, index)
+        tb.add_histogram('actor_cov_fc4_w', actor.cov_fc4.weight, index)
+        tb.add_histogram('actor_cov_fc5_w', actor.cov_fc5.weight, index)
+        tb.add_histogram('actor_cov_fc6_w', actor.cov_fc6.weight, index)
+        tb.add_histogram('actor_cov_fc7_w', actor.cov_fc7.weight, index)
+        tb.add_histogram('actor_cov_fc8_w', actor.cov_fc8.weight, index)
+        tb.add_histogram('actor_cov_fc9_w', actor.cov_fc9.weight, index)
+        tb.add_histogram('actor_cov_fc10_w', actor.cov_fc10.weight, index)
+        tb.add_histogram('actor_cov_fc1_w_g', actor.cov_fc1.weight.grad, index)
+        tb.add_histogram('actor_cov_fc2_w_g', actor.cov_fc2.weight.grad, index)
+        tb.add_histogram('actor_cov_fc3_w_g', actor.cov_fc3.weight.grad, index)
+        tb.add_histogram('actor_cov_fc4_w_g', actor.cov_fc4.weight.grad, index)
+        tb.add_histogram('actor_cov_fc5_w_g', actor.cov_fc5.weight.grad, index)
+        tb.add_histogram('actor_cov_fc6_w_g', actor.cov_fc6.weight.grad, index)
+        tb.add_histogram('actor_cov_fc7_w_g', actor.cov_fc7.weight.grad, index)
+        tb.add_histogram('actor_cov_fc8_w_g', actor.cov_fc8.weight.grad, index)
+        tb.add_histogram('actor_cov_fc9_w_g', actor.cov_fc9.weight.grad, index)
+        tb.add_histogram('actor_cov_fc10_w_g', actor.cov_fc10.weight.grad, index)
+        # actor b
+        tb.add_histogram('actor_cov_fc1_b', actor.cov_fc1.bias, index)
+        tb.add_histogram('actor_cov_fc2_b', actor.cov_fc2.bias, index)
+        tb.add_histogram('actor_cov_fc3_b', actor.cov_fc3.bias, index)
+        tb.add_histogram('actor_cov_fc4_b', actor.cov_fc4.bias, index)
+        tb.add_histogram('actor_cov_fc5_b', actor.cov_fc5.bias, index)
+        tb.add_histogram('actor_cov_fc6_b', actor.cov_fc6.bias, index)
+        tb.add_histogram('actor_cov_fc7_b', actor.cov_fc7.bias, index)
+        tb.add_histogram('actor_cov_fc8_b', actor.cov_fc8.bias, index)
+        tb.add_histogram('actor_cov_fc9_b', actor.cov_fc9.bias, index)
+        tb.add_histogram('actor_cov_fc10_b', actor.cov_fc10.bias, index)
+        tb.add_histogram('actor_cov_fc1_b_g', actor.cov_fc1.bias.grad, index)
+        tb.add_histogram('actor_cov_fc2_b_g', actor.cov_fc2.bias.grad, index)
+        tb.add_histogram('actor_cov_fc3_b_g', actor.cov_fc3.bias.grad, index)
+        tb.add_histogram('actor_cov_fc4_b_g', actor.cov_fc4.bias.grad, index)
+        tb.add_histogram('actor_cov_fc5_b_g', actor.cov_fc5.bias.grad, index)
+        tb.add_histogram('actor_cov_fc6_b_g', actor.cov_fc6.bias.grad, index)
+        tb.add_histogram('actor_cov_fc7_b_g', actor.cov_fc7.bias.grad, index)
+        tb.add_histogram('actor_cov_fc8_b_g', actor.cov_fc8.bias.grad, index)
+        tb.add_histogram('actor_cov_fc9_b_g', actor.cov_fc9.bias.grad, index)
+        tb.add_histogram('actor_cov_fc10_b_g', actor.cov_fc10.bias.grad, index)
+    except BaseException as e:
+        print("    >>> Logger error: {}".format(e))
     return tb
+
+
+def save_model(prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time, update_time):
+    print("\n\nSaving training checkpoint...")
+    print("-----------------------------")
+    save_path = os.path.join("./save/model",
+                             prefix + '_iter_{}'.format(iteration + iteration_pretrain) + '.tar')
+    torch.save({
+        'iteration': iteration + iteration_pretrain,
+        'seed': seed,
+        'actor_state_dict': actor.state_dict(),
+        'critic_state_dict': critic.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'time_recorder': [rollout_time, update_time],
+    }, save_path)
+    print("Saved checkpoint to: {}".format(save_path))
+    print("-----------------------------\n\n")
+
+
+def test_rollout(env_name, actor, critic):
+    env = gym.make(env_name)
+    obs = env.reset()
+    done = False
+    old_env = None
+    while not done:
+        old_env = copy.deepcopy(env)
+        action, log_prob, raw_action = actor.gen_action(torch.Tensor(obs).cuda())
+        obs, reward, done, info = env.step(action.cpu())
+        if done:
+            obs, reward, done, info = env.step(action.cpu())
+    return 1
 
 
 @ray.remote

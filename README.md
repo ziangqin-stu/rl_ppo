@@ -184,6 +184,10 @@ Another thing about debugging or tuning a DL algorithm is, If the learning sign 
 
 Also, in DL algorithm implementation, if your learning curve is weird in some point of view, it is more likely that something is wrong in your code, instead of the math or algorithm is wrong.
 
+### General Way of Debug
+
+
+
 ### Learn More Engineer Knowledge for Coding
 
 It is critical to have solid development skills! I think I need to learn more coding skills and engineering knowledge as software developer engineers do. This will improve your code quality, also allows you to be more confident during your development. Also, pay some attention to books that teach you how to think when developing. Implementation skills or even developing skills are critical to everyone who are willing to do some AI.

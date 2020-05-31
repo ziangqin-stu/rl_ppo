@@ -2,6 +2,7 @@ import copy
 import os
 import time
 import random
+import gc
 
 import numpy as np
 import ray
@@ -11,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from networks import get_norm_log_prob
 from rolloutmemory import RolloutMemory
 from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
-    get_values, get_entropy, log_policy_rollout, logger_scalar, logger_histogram, ParallelEnv, AverageMeter
+    get_values, get_entropy, log_policy_rollout, logger_scalar, logger_histogram, save_model, test_rollout, ParallelEnv, AverageMeter
 
 
 def rollout_serial(rolloutmem, envs, actor, critic, params):
@@ -156,14 +157,14 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         raw_actions = torch.stack(raw_actions).permute(1, 0, 2).detach().cuda()
         rewards = torch.Tensor(rewards).permute(1, 0).cuda()
         dones = torch.Tensor(dones).permute(1, 0).cuda()
-        log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
+        log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().double().cuda()
     else:
         old_states = torch.Tensor(old_states).permute(1, 0, 2).cuda()
         new_states = torch.Tensor(new_states).permute(1, 0, 2).cuda()
         raw_actions = torch.stack(raw_actions).permute(1, 0, 2).detach().cuda()
         rewards = torch.Tensor(rewards).permute(1, 0).cuda()
         dones = torch.Tensor(dones).permute(1, 0).cuda()
-        log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().cuda()
+        log_probs = torch.stack(log_probs).permute(1, 0, 2).detach().double().cuda()
     for i in range(env_number):
         # compute each episode length
         first_done = (dones[i] > 0).nonzero().min()
@@ -171,6 +172,8 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
                                       rewards[i][:first_done + 1], params.policy_params.discount)
         advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd)[:,
                      None].detach().cuda()
+        advantages = advantages[:first_done + 1]
+        advantages = (advantages - advantages.mean()) / torch.std(advantages)
         values = get_values(rewards[i][:first_done + 1], params.policy_params.discount)[:, None].cuda()
         # abandon redundant step info
 
@@ -236,6 +239,7 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     # gradient descent
     optimizer.zero_grad()
     loss.backward()
+    # clamp gradient to avoid explosion
     for param in list(actor.parameters()) + list(critic.parameters()):
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
@@ -248,6 +252,7 @@ def train(params):
     # ============
     # Preparations
     # ============
+    gc.collect()
     ray.init(log_to_driver=False, local_mode=False)  # or, ray.init()
     if not params.use_pretrain:
         # >> algorithm ingredients instantiation
@@ -312,9 +317,9 @@ def train(params):
         for epoch in range(params.policy_params.epochs_num):
             loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \
                 optimize_step(optimizer, rolloutmem, actor, critic, params, iteration)
+        iter_end_time = time.time()
         tb = logger_scalar(tb, iteration + iteration_pretrain, loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len, mean_iter_reward, time_start)
         tb = logger_histogram(tb, iteration + iteration_pretrain, actor, critic)
-        iter_end_time = time.time()
         rollout_time.update(update_start_time - iter_start_time)
         update_time.update(iter_end_time - update_start_time)
         tb.add_scalar('rollout_time', rollout_time.val, iteration + iteration_pretrain)
@@ -326,22 +331,12 @@ def train(params):
             log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
         # save model
         if iteration % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
-            print("\n\nSaving training checkpoint...")
-            print("-----------------------------")
-            save_path = os.path.join("./save/model",
-                                     params.prefix + '_iter_{}'.format(iteration + iteration_pretrain) + '.tar')
-            torch.save({
-                'iteration': iteration + iteration_pretrain,
-                'seed': seed,
-                'actor_state_dict': actor.state_dict(),
-                'critic_state_dict': critic.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'time_recorder': [rollout_time, update_time],
-            }, save_path)
-            print("Saved checkpoint to: {}".format(save_path))
-            print("-----------------------------\n\n")
-
+            save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
+                       update_time)
+        test_rollout(params.env_name, actor, critic)
     # >> save rollout videos
     if params.log_video:
+        save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
+                   update_time)
         for i in range(3):
             log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))

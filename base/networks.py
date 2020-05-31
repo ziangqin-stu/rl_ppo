@@ -143,7 +143,7 @@ class ActorContinueFC(nn.Module):
         cov = torch.relu(self.cov_fc8(cov))
         cov = torch.relu(self.cov_fc9(cov))
         cov = torch.exp(self.cov_fc10(cov))
-        cov = torch.clamp(cov, 1e-6, 1.0e30)
+        # cov = torch.clamp(cov, 1e-6, 1.0e30)
         return mean, cov
 
     def gen_action(self, state):
@@ -156,7 +156,7 @@ class ActorContinueFC(nn.Module):
 
     def policy_out(self, state):
         mean, cov = self.forward(state)
-        cov = torch.clamp(cov, 1e-6, 1.0e30)
+        # cov = torch.clamp(cov, 1e-6, 1.0e30)
         return mean.double(), cov.double()
 
 
@@ -362,7 +362,13 @@ def get_norm_log_prob(logits, raw_actions, scale, dist_type):
     log_prob = None
     if dist_type is 'Normal':
         mean, cov = logits[0], logits[1]
+        # cov value may overflow
+        if not torch.stack([~torch.isnan(cov[i]) for i in range(len(cov))]).bool().all():
+            print("    >>> nan in cov, clipped ratio value.")
+            cov = torch.clamp(cov, 0., 3.0e38)
         action_batch = scale * torch.tanh(raw_actions)
+        assert (-1. <= torch.stack([action_batch / scale])).all() and (torch.stack([action_batch / scale <= 1.])).all(), \
+            "    >>> [get_norm_log_prob], action value error."
         log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6) \
                    + Normal(mean.double(), cov.double()).log_prob(raw_actions)
         # log_prob = torch.prod(log_prob, dim=1)[:, None]
