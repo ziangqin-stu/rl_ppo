@@ -2,21 +2,20 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="937f871a-24da-4ac0-924c-c34e9e3b6a62" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/readme_data/image/demo_hopper_reward.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_1.mp4" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_2.mp4" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum_1.mp4" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum_2.mp4" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_minigrid-empty16.mp4" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/impl_ppo.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/impl_ppo.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/image/algorithm.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/image/code_structure.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_1.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_2.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_3.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_4.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum_1.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum_2.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_minigrid-empty16.gif" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_minigrid-empty5.gif" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/readme_data/video/demo_hopper.mp4" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme_data/image/blank.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -172,11 +171,11 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.test_csv" />
       <item itemvalue="Python.ppo" />
+      <item itemvalue="Python.test_csv" />
+      <item itemvalue="Python.test_env" />
       <item itemvalue="Python.test_model_resume" />
       <item itemvalue="Python.train" />
-      <item itemvalue="Python.test_env" />
     </list>
     <recent_temporary>
       <list>
@@ -207,7 +206,7 @@
       <workItem from="1590524885323" duration="422000" />
       <workItem from="1590525346360" duration="50879000" />
       <workItem from="1590682310210" duration="60668000" />
-      <workItem from="1590837469998" duration="39686000" />
+      <workItem from="1590837469998" duration="42534000" />
     </task>
     <servers />
   </component>

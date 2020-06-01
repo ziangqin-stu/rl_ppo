@@ -328,10 +328,10 @@ def train(params):
         print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
               .format(iteration + iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
-        if iteration % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
+        if (iteration + 1) % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
             log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
         # save model
-        if iteration % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
+        if (iteration + 1) % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
             save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
                        update_time)
         test_rollout(params.env_name, actor, critic)
