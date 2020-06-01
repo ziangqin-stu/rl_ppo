@@ -14,6 +14,7 @@ from rolloutmemory import RolloutMemory
 from utils import gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
     get_values, get_entropy, logger_scalar, save_model, log_policy_rollout, ParallelEnv, \
     AverageMeter
+from data import envnames_classiccontrol
 
 
 def rollout_serial(rolloutmem, envs, actor, critic, params):
@@ -317,7 +318,10 @@ def train(params):
         print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
               .format(iteration + iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
-        if (iteration + 1) % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
+        if (iteration + 1) % int(params.plotting_iters) == 0 \
+                and iteration > 0 \
+                and params.log_video \
+                and params.env_name not in envnames_classiccontrol:
             log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
         # save model
         if (iteration + 1) % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
@@ -327,5 +331,5 @@ def train(params):
     if params.log_video:
         save_model(params.prefix, params.iter_num, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
                    update_time)
-        for i in range(3):
-            log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
+        if params.env_name not in envnames_classiccontrol:
+            for i in range(3): log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
