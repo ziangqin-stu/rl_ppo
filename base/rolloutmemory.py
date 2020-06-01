@@ -66,6 +66,6 @@ class RolloutMemory:
 
     def compute_epoch_length(self):
         done_indexes = (self.done_mem == 1).nonzero()
-        self.epochs_len = torch.Tensor([done_indexes[i] - done_indexes[i - 1] if i > 0 else done_indexes[0]
+        self.epochs_len = torch.Tensor([(done_indexes[i] - done_indexes[i - 1]) if i > 0 else (done_indexes[0] + 1)
                                         for i in reversed(range(len(done_indexes)))])
         return self.epochs_len

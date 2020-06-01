@@ -143,11 +143,12 @@ class ActorContinueFC(nn.Module):
         cov = torch.relu(self.cov_fc8(cov))
         cov = torch.relu(self.cov_fc9(cov))
         cov = torch.exp(self.cov_fc10(cov))
+        # cov = torch.clamp(cov, 1e-6, 1.0e30)
         return mean, cov
 
     def gen_action(self, state):
         mean, cov = self.forward(state)
-        dist = Normal(mean, cov)
+        dist = Normal(mean.double(), cov.double())
         raw_action = dist.sample()
         action = self.scale * torch.tanh(raw_action)
         log_prob = get_norm_log_prob([mean, cov], raw_action, self.scale, dist_type='Normal')
@@ -155,7 +156,8 @@ class ActorContinueFC(nn.Module):
 
     def policy_out(self, state):
         mean, cov = self.forward(state)
-        return mean, cov
+        # cov = torch.clamp(cov, 1e-6, 1.0e30)
+        return mean.double(), cov.double()
 
 
 class CriticFC(nn.Module):
@@ -168,8 +170,10 @@ class CriticFC(nn.Module):
         self.fc4 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
         self.fc5 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
         self.fc6 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
-        self.fc7 = nn.Linear(2 * hidden_dim, hidden_dim)
-        self.fc8 = nn.Linear(hidden_dim, 1)
+        self.fc7 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
+        self.fc8 = nn.Linear(2 * hidden_dim, 2 * hidden_dim)
+        self.fc9 = nn.Linear(2 * hidden_dim, hidden_dim)
+        self.fc10 = nn.Linear(hidden_dim, 1)
         # initialize network parameters
         nn.init.orthogonal_(self.fc1.weight)
         nn.init.orthogonal_(self.fc2.weight)
@@ -179,6 +183,8 @@ class CriticFC(nn.Module):
         nn.init.orthogonal_(self.fc6.weight)
         nn.init.orthogonal_(self.fc7.weight)
         nn.init.orthogonal_(self.fc8.weight)
+        nn.init.orthogonal_(self.fc9.weight)
+        nn.init.orthogonal_(self.fc10.weight)
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
@@ -188,7 +194,9 @@ class CriticFC(nn.Module):
         x = torch.relu(self.fc5(x))
         x = torch.relu(self.fc6(x))
         x = torch.relu(self.fc7(x))
-        x = self.fc8(x)
+        x = torch.relu(self.fc8(x))
+        x = torch.relu(self.fc9(x))
+        x = self.fc10(x)
         return x
 
     def gae_delta(self, old_state, new_state, rewards, discount):
@@ -225,7 +233,7 @@ class ActorDiscreteFC(nn.Module):
         logits = self.forward(state)
         dist = Categorical(logits=logits)
         raw_action = dist.sample()
-        action = int(self.scale * raw_action)
+        action = (self.scale * raw_action).int()
         log_prob = get_norm_log_prob(logits, raw_action, self.scale, dist_type='Categorical')
         return action, log_prob, raw_action
 
@@ -272,6 +280,7 @@ class CNNDiscreteNet(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
+        # compute the output dimension of each convolution layer
         conv_dim = lambda x, f, p, s: math.floor((x - f + 2 * p) / s) + 1
         wo = conv_dim(conv_dim(conv_dim(conv_dim(conv_dim(conv_dim(w, 5, 2, 1), 2, 0, 2), 7, 3, 1), 2, 0, 2), 5, 2, 1),
                       2, 0, 2)
@@ -299,13 +308,16 @@ class CNNDiscreteNet(nn.Module):
                 nn.init.orthogonal_(self.fc[i].weight)
 
     def forward(self, state):
-        if len(state.shape) < 4:
+        if len(state.shape) == 3:
             # reformat single image: (width, height, channel) -> (channel, width, height)
             state = state.permute(2, 0, 1)
             state = state.unsqueeze(0)
-        else:
+        elif len(state.shape) == 4:
             # reformat batch images: (batch_size, width, height, channel) -> (batch_size, channel, width, height)
             state = state.permute(0, 3, 1, 2)
+        elif len(state.shape) == 5:
+            # reformat batch images: (batch_size, parallel_batch_size, width, height, channel) -> (batch_size, parallel_batch_size, channel, width, height)
+            state = state.permute(0, 1, 4, 2, 3)
         x = self.conv1(state)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -324,7 +336,10 @@ class ActorDiscreteCNN(CNNDiscreteNet):
         dist = Categorical(logits=logits)
         raw_action = dist.sample()
         action = self.scale * raw_action
-        log_prob = dist.log_prob(raw_action)
+        log_prob = dist.log_prob(raw_action.double())
+        if len(action.shape) < 2: action = action[:, None]  # expand dimension of minigrid action(int)
+        if len(raw_action.shape) < 2: raw_action = raw_action[:, None]  # also raw_action
+        if len(log_prob.shape) < 2: log_prob = log_prob[:, None]  # also log_prob
         return action, log_prob, raw_action
 
     def policy_out(self, state):
@@ -343,18 +358,25 @@ class CriticCNN(CNNDiscreteNet):
     def gae_delta(self, old_state, new_state, rewards, discount):
         return rewards + discount * self.forward(new_state).view(-1) - self.forward(old_state).view(-1)
 
+
 def get_norm_log_prob(logits, raw_actions, scale, dist_type):
     log_prob = None
     if dist_type is 'Normal':
         mean, cov = logits[0], logits[1]
+        # cov value may overflow
+        if not torch.stack([~torch.isnan(cov[i]) for i in range(len(cov))]).bool().all():
+            print("    >>> nan in cov, clipped ratio value.")
+            cov = torch.clamp(cov, 0., 3.0e38)
         action_batch = scale * torch.tanh(raw_actions)
+        assert (-1. <= torch.stack([action_batch / scale])).all() and (
+            torch.stack([action_batch / scale <= 1.])).all(), "    >>> [get_norm_log_prob], action value error."
         log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6) \
-                   + Normal(mean, cov).log_prob(raw_actions)
+                   + Normal(mean.double(), cov.double()).log_prob(raw_actions)
         # log_prob = torch.prod(log_prob, dim=1)[:, None]
     elif dist_type is 'Categorical':
         # Categorical.log_prob accepts tight-dimension data, return 1-dimension tensor when received batch input,
         #   use "view(-1)" to unbox input data
-        log_prob = Categorical(logits=logits).log_prob(raw_actions.view(-1))
+        log_prob = Categorical(logits=logits.double()).log_prob(raw_actions.view(-1))
         # add redundant dimension for standardization in project when return batch data
         if log_prob.shape[0] > 1:
             log_prob = log_prob[:, None]
