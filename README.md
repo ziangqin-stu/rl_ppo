@@ -93,7 +93,9 @@ You can see prompts in command line showing the loading and saving process works
 
 #### CartPole-v1
 
-MountainCar-v0
+One of the simplest environment in classical control. Training converges quickly.
+
+[missing training curve]
 
 ### Continuous Environment:
 
@@ -110,17 +112,39 @@ The simplest environment in MuJoCo environments. Using continuous action space. 
 
 #### Hopper-v2
 
-A more complex environment than InvertedPendulum-v2. Humanoid-v2
+A more complex environment than InvertedPendulum-v2. During training, agents first learn how to jump forward, then learn how to control their joints to both keep balance and jump far. 
+
+Some times training gets trapped to a local minimum that agents standstill only to get the alive reward (1.0 per step). Under this situation, episode length goes up quickly, but reward only limited to the number of alive steps. This situation is shown in the first line of learning plot below.
+
+In a typical training process, agents try different ways of hopping, some move dramatically, some move slow and stable. During their training, the reward will go up (find a way that can move better) then fall back a little (fail to move this way for more steps), then go up again (adjust policy and find another way of moving). If the reward goes horizontally for a while, the entropy of policy will go high to encourage exploration.
+
+<div style="display:flex;">
+    <div style="display:flex; margin:auto;">
+        <img src=".\readme_data\image\demo_hoppe_2_reward.png" alt="reward curve" width="400" style="padding: 5px;"/>
+        <img src=".\readme_data\image\demo_hoppe_2_episode.png" alt="reward curve" width="400" style="padding: 5px;"/>
+    </div>
+</div>
+
+<div style="display:flex;">
+    <div style="display:flex; margin:auto; align:left">
+        <img src=".\readme_data\image\demo_hoppe_1_reward.png" alt="reward curve" width="400" style="padding: 5px;"/>
+        <img src=".\readme_data\image\demo_hoppe_1_entropy.png" alt="reward curve" width="400" style="padding: 5px;"/>
+    </div>
+</div>
+
+[experiment not complete]
 
 #### Humanoid-v2
 
 One of the most complex environment in MuJoCo environments.
 
+[missing experiment]
+
 ### Image Observation Environment:
 
 #### MiniGrid-Empty-5x5-v0
 
-The simplest environment in MiniGrid series environment, run to test code correctness. The maximum episode length during training is 15 steps, episode steps reaches its minimum(5 steps) in about100 iterations. The entire training process last for 40 minutes.
+The simplest environment in MiniGrid series environment, run to test code correctness. The maximum episode length during training is **15 steps**, episode steps reaches its minimum(5 steps) in about100 iterations. The entire training process last for 40 minutes.
 
 Run a experiment with the same hyper parameter of my train: `python ppo.py --param_id=1`
 
@@ -135,21 +159,45 @@ Run a experiment with the same hyper parameter of my train: `python ppo.py --par
 
 Bigger empty environment, also works. The maximum episode length during training is 200 steps, algorithm learns quick in first 10 iterations then generally reaches minimal episode step number of 27 steps.
 
+[missing training curve]
+
 #### MiniGrid-SimpleCrossingS9N1-v0
+
+[missing experiment]
 
 #### MiniGrid-LavaGapS5-v0
 
-### Rollout Episode Videos:
+[missing experiment]
+
+### Some Rollout Episode Videos:
 
 <div style="display:flex;">
     <div style="display:flex; margin:auto;">
-        <video src=".\readme_data\video\demo_invertedpendulum.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
-        <video source src=".\readme_data\video\demo_hopper.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+        <video src=".\readme_data\video\demo_invertedpendulum_1.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+        <video src=".\readme_data\video\demo_invertedpendulum_2.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+    </div>       
+</div>
+
+<div style="display:flex;">
+    <div style="display:flex; margin:auto;">
         <video source src=".\readme_data\video\demo_minigrid-empty5.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+        <video source src=".\readme_data\video\demo_minigrid-empty16.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
     </div>
 </div>
 
+<div style="display:flex;">
+    <div style="display:flex; margin:auto;">
+        <video source src=".\readme_data\video\demo_hopper_1.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+        <video source src=".\readme_data\video\demo_hopper_2.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+    </div>
+</div>
 
+<div style="display:flex;">
+    <div style="display:flex; margin:auto;">
+        <video source src=".\readme_data\video\demo_hopper_3.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+        <video source src=".\readme_data\video\demo_hopper_4.mp4" controls width="300" autoplay=FALSE type="video/webm" style="padding: 10px;"></video>
+    </div>
+</div>
 
 ## Develop Experience: Reflections
 
