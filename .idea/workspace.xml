@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="937f871a-24da-4ac0-924c-c34e9e3b6a62" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/train_param.csv" beforeDir="false" afterPath="$PROJECT_DIR$/base/train_param.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -159,11 +158,11 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.test_csv" />
       <item itemvalue="Python.ppo" />
+      <item itemvalue="Python.test_csv" />
+      <item itemvalue="Python.test_env" />
       <item itemvalue="Python.test_model_resume" />
       <item itemvalue="Python.train" />
-      <item itemvalue="Python.test_env" />
     </list>
     <recent_temporary>
       <list>
