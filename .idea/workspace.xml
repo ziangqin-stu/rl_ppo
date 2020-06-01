@@ -2,13 +2,21 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="937f871a-24da-4ac0-924c-c34e9e3b6a62" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/HOME.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/HOME.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/image/demo_hopper_reward.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_1.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_hopper_2.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum_1.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum_2.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/readme_data/video/demo_minigrid-empty16.mp4" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/impl_ppo.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/impl_ppo.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/networks.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/networks.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/train_param.csv" beforeDir="false" afterPath="$PROJECT_DIR$/base/train_param.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/base/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme_data/video/demo_hopper.mp4" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme_data/video/demo_invertedpendulum.mp4" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -199,7 +207,7 @@
       <workItem from="1590524885323" duration="422000" />
       <workItem from="1590525346360" duration="50879000" />
       <workItem from="1590682310210" duration="60668000" />
-      <workItem from="1590837469998" duration="30200000" />
+      <workItem from="1590837469998" duration="39686000" />
     </task>
     <servers />
   </component>
@@ -210,9 +218,10 @@
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="1834" y="358" key="#Deployment" timestamp="1590526330639">
+    <state x="1834" y="358" key="#Deployment" timestamp="1590977398701">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
+    <state x="1834" y="358" key="#Deployment/0.0.3440.1400/3440.175.1080.1880/854.1440.1280.680@0.0.3440.1400" timestamp="1590977398701" />
     <state x="1834" y="358" key="#Deployment/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590526330639" />
     <state x="1734" y="357" width="816" height="729" key="#Intentions" timestamp="1590408063218">
       <screen x="0" y="0" width="3440" height="1400" />
@@ -278,9 +287,10 @@
     </state>
     <state width="1806" height="404" key="GridCell.Tab.1.right/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590947447483" />
     <state width="1037" height="438" key="GridCell.Tab.1.right/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@3440.193.1080.1880" timestamp="1590213490998" />
-    <state x="1911" y="366" key="SettingsEditor" timestamp="1590526437176">
+    <state x="1911" y="366" key="SettingsEditor" timestamp="1590977405119">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
+    <state x="1911" y="366" key="SettingsEditor/0.0.3440.1400/3440.175.1080.1880/854.1440.1280.680@0.0.3440.1400" timestamp="1590977405119" />
     <state x="1911" y="366" key="SettingsEditor/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590526437176" />
     <state width="958" height="689" key="XDebugger.FullValuePopup" timestamp="1590928268549">
       <screen x="0" y="0" width="3440" height="1400" />
@@ -290,9 +300,10 @@
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
     <state x="2062" y="533" key="com.intellij.ide.util.TipDialog/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590837524815" />
-    <state x="1848" y="284" width="972" height="821" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1590918336845">
+    <state x="1848" y="284" width="972" height="821" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1590976949170">
       <screen x="0" y="0" width="3440" height="1400" />
     </state>
+    <state x="1848" y="284" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.3440.1400/3440.175.1080.1880/854.1440.1280.680@0.0.3440.1400" timestamp="1590976949170" />
     <state x="1848" y="284" width="972" height="821" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.3440.1400/3440.193.1080.1880/872.1440.1280.680@0.0.3440.1400" timestamp="1590918336845" />
     <state x="2112" y="408" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1590799636185">
       <screen x="0" y="0" width="3440" height="1400" />
@@ -337,7 +348,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/base/train.py</url>
-          <line>335</line>
+          <line>336</line>
           <option name="timeStamp" value="590" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
