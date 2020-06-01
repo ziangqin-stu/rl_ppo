@@ -1,8 +1,6 @@
 # Implementation Practice: Proximal Policy Optimization
 
-see this [[README writing tutorial](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)]
-
-> Project description paragraph
+Practice implementation of the PPO algorithm.
 
 ## PPO Structure
 
@@ -28,11 +26,15 @@ People store policy rollouts from last iteration to calculate $Advantage_{\pi}$,
 
 PPO use a Actor-Critic style algorithm and do policy update as vanilla policy gradient method.
 
-![algorithm](./readme_data/image/algorithm.png)
+<div align=center style="margin:auto;">
+       <img src="./readme_data/image/algorithm.png" alt="reward curve" align=center 			style="padding: 5px;"/>
+</div>
 
 Based on precious instruction, the PPO code should be like this:
 
-![code_structure](./readme_data/image/code_structure.png)
+<div align=center style="margin:auto;">
+       <img src="./readme_data/image/code_structure.png" alt="reward curve" align=center 			style="padding: 5px;"/>
+</div>
 
 ## Getting Started
 
