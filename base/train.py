@@ -61,7 +61,7 @@ def rollout_serial(rolloutmem, envs, actor, critic, params):
     return torch.mean(torch.Tensor(episodes_rewards))
 
 
-@ray.remote(num_gpus=3)
+@ray.remote(num_gpus=1)
 def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
     # initialize logger
     old_states, new_states, raw_actions, dones, rewards, log_probs, advantages, rollout_reward = [], [], [], [], [], [], [], 0.
@@ -253,7 +253,7 @@ def train(params):
     # Preparations
     # ============
     gc.collect()
-    ray.init(log_to_driver=False, local_mode=False)  # or, ray.init()
+    ray.init(log_to_driver=False, local_mode=False, num_gpus=1)  # or, ray.init()
     if not params.use_pretrain:
         # >> algorithm ingredients instantiation
         seed = params.seed
@@ -306,6 +306,7 @@ def train(params):
     print("----------------------------------")
     time_start = time.time()
     for iteration in range(int(params.iter_num - iteration_pretrain)):
+        gc.collect()
         # collect rollouts from current policy
         rolloutmem.reset()
         iter_start_time = time.time()

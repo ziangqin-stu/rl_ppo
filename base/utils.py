@@ -240,6 +240,8 @@ def test_rollout(env_name, actor, critic):
 @ray.remote
 class ParallelEnv:
     def __init__(self, env_name, id):
+        print("    ray.get_gpu_ids(): {}".format(ray.get_gpu_ids()))
+        print("    CUDA_VISIBLE_DEVICES: {}\n".format(os.environ["CUDA_VISIBLE_DEVICES"]))
         self.env = gen_env(env_name)
         self.id = id
         self.attributes = {
