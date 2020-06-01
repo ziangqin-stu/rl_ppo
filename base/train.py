@@ -1,19 +1,18 @@
 import copy
-import os
-import time
-import random
 import gc
+import os
+import random
+import time
 
 import numpy as np
 import ray
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from data import envnames_minigrid
 from networks import get_norm_log_prob
 from rolloutmemory import RolloutMemory
 from utils import gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
-    get_values, get_entropy, log_policy_rollout, logger_scalar, logger_histogram, save_model, test_rollout, ParallelEnv, \
+    get_values, get_entropy, logger_scalar, save_model, log_policy_rollout, ParallelEnv, \
     AverageMeter
 
 
@@ -75,7 +74,7 @@ def rollout_sim_single_step_parallel(task_id, env, actor, horizon):
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_obs).cuda())
         assert (env_attributes['action_high'].cuda() >= action.cuda()).all() and (
                 action.cuda() >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
-        [new_obs, reward, done, info] = ray.get(env.step.remote(action))
+        [new_obs, reward, done, _] = ray.get(env.step.remote(action))
         # record trajectory step
         old_states.append(old_obs)
         new_states.append(new_obs)
@@ -177,30 +176,20 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         first_done = (dones[i] > 0).nonzero().min()
         gae_deltas = critic.gae_delta(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
                                       rewards[i][:first_done + 1], params.policy_params.discount)
-        advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd)[:,
-                     None].detach().cuda()
+        advantages = get_advantage_new(gae_deltas, params.policy_params.discount,
+                                       params.policy_params.lambd)[:, None].detach().cuda()
         advantages = advantages[:first_done + 1]
         advantages = (advantages - advantages.mean()) / torch.std(advantages + 1e-6)
         values = get_values(rewards[i][:first_done + 1], params.policy_params.discount)[:, None].cuda()
         # abandon redundant step info
-
         rolloutmem.append(old_states[i][:first_done + 1], new_states[i][:first_done + 1],
                           raw_actions[i][:first_done + 1], rewards[i][:first_done + 1], dones[i][:first_done + 1],
                           log_probs[i][:first_done + 1], advantages[:first_done + 1], values[:first_done + 1])
-        # rolloutmem.append(old_states[i], new_states[i], raw_actions[i], rewards[i], dones[i], log_probs[i], advantages,
-        #                   values)
-
-    # if env_attributes['final_reward']:
-    #     return torch.mean(torch.Tensor(rollout_reward)) / max(torch.mean(torch.Tensor(episode_number)), torch.Tensor([1.]))
-    # else:
-    #     return torch.mean(torch.Tensor(rollout_reward))
-    # return torch.mean(torch.Tensor(rollout_reward)) / max(torch.mean(torch.Tensor(episode_number)), torch.Tensor([1.]))
     return torch.mean(torch.Tensor(rollout_reward))
 
 
 def rollout(rolloutmem, envs, actor, critic, params):
     if params.parallel:
-        # mean_rollout_reward = rollout_parallel(rolloutmem, envs, actor, critic, params)
         mean_rollout_reward = parallel_rollout_env(rolloutmem, envs, actor, critic, params)
     else:
         mean_rollout_reward = rollout_serial(rolloutmem, envs, actor, critic, params)
@@ -211,7 +200,6 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
     entropy_discount = 1.
     if params.decay_entro_loss:
         entropy_discount = 1. - iteration / params.iter_num
-    # print('entropy_discount: {}'.format(entropy_discount))
     # sample rollout steps from current policy
     old_obs_batch, _, raw_action_batch, reward_batch, done_batch, old_log_prob_batch, advantage_batch, value_batch \
         = rolloutmem.sample(params.policy_params.batch_size)
@@ -221,18 +209,12 @@ def optimize_step(optimizer, rolloutmem, actor, critic, params, iteration):
                                            dist_type=get_dist_type(params.env_name))
     assert len(new_log_prob_batch.shape) > 1, '    >>> [optimize_step -> new_log_prob_batch], wrong dimension'
     ratio = torch.exp(new_log_prob_batch.double() - old_log_prob_batch.double())
-    # if not torch.stack([ratio[i] != float('inf') for i in range(len(ratio))]).bool().all():
-    #     print("    >>> inf in ratio")
-    # if not torch.stack([ratio[i] < 100 for i in range(len(ratio))]).bool().all():
-    #     print("    >>> clipped ratio value!")
     if not torch.stack([~torch.isnan(ratio[i]) for i in range(len(ratio))]).bool().all():
         print("    >>> nan in ratio, clipped ratio value.")
         ratio = torch.clamp(ratio, 0., 3.0e38)
     if ratio.mean() < 0.1:
         print("    >>> low ratio!")
 
-    # assert torch.stack([ratio[i] <= 1.7e308 for i in range(len(ratio))]).bool().all(), \
-    #     '    >>> [optimize_step -> ratio], ratio data overflow.'
     surr1 = ratio * advantage_batch.double()
     surr2 = torch.clamp(ratio, 1 - params.policy_params.clip_param,
                         1 + params.policy_params.clip_param) * advantage_batch.double()
@@ -262,7 +244,7 @@ def train(params):
     gc.collect()
     ray.init(log_to_driver=False, local_mode=False, num_gpus=1)  # or, ray.init()
     if not params.use_pretrain:
-        # >> algorithm ingredients instantiation
+        # algorithm ingredients instantiation
         seed = params.seed
         actor = gen_actor(params.env_name, params.policy_params.hidden_dim)
         critic = gen_critic(params.env_name, params.policy_params.hidden_dim)
@@ -270,7 +252,7 @@ def train(params):
                                      lr=params.policy_params.learning_rate)
         rollout_time, update_time = AverageMeter(), AverageMeter()
         iteration_pretrain = 0
-        # >> set random seed (for reproducing experiment)
+        # set random seed (for reproducing experiment)
         os.environ['PYTHONHASHSEED'] = str(seed)
         random.seed(seed)
         torch.manual_seed(seed)
@@ -335,15 +317,15 @@ def train(params):
         print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
               .format(iteration + iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
-        # if (iteration + 1) % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
-            # log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
+        if (iteration + 1) % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
+            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
         # save model
         if (iteration + 1) % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
             save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
                        update_time)
-    # >> save rollout videos
+    # save rollout videos
     if params.log_video:
-        save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
+        save_model(params.prefix, params.iter_num, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
                    update_time)
-        # for i in range(3):
-            # log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
+        for i in range(3):
+            log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))

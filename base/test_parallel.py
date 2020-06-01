@@ -167,7 +167,7 @@ def subprocenv_rollout(env_name, env_number, horizon):
 
 
 """
-Minimal Simulation for Proj
+Method 1
 """
 
 
@@ -274,7 +274,7 @@ def serial_rollout_sim(env_name, env_number, horizon):
 
 
 """
-Ayush's Method
+Method 2
 """
 
 

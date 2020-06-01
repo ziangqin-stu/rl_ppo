@@ -2,13 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="937f871a-24da-4ac0-924c-c34e9e3b6a62" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/HOME.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/HOME.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/data.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/hp.txt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/base/networks.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/networks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/base/test_parallel.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/test_parallel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/base/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/train_param.csv" beforeDir="false" afterPath="$PROJECT_DIR$/base/train_param.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/base/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/base/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_env.py" beforeDir="false" afterPath="$PROJECT_DIR$/test/test_env.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -200,7 +200,7 @@
       <workItem from="1590525346360" duration="50879000" />
       <workItem from="1590682310210" duration="60668000" />
       <workItem from="1590837469998" duration="46921000" />
-      <workItem from="1591036645724" duration="10410000" />
+      <workItem from="1591036645724" duration="11261000" />
     </task>
     <servers />
   </component>
@@ -337,11 +337,6 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/base/train.py</url>
-          <line>228</line>
-          <option name="timeStamp" value="611" />
-        </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/base/utils.py</url>
           <line>135</line>

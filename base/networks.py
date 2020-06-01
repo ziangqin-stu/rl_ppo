@@ -280,6 +280,7 @@ class CNNDiscreteNet(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
+        # compute the output dimension of each convolution layer
         conv_dim = lambda x, f, p, s: math.floor((x - f + 2 * p) / s) + 1
         wo = conv_dim(conv_dim(conv_dim(conv_dim(conv_dim(conv_dim(w, 5, 2, 1), 2, 0, 2), 7, 3, 1), 2, 0, 2), 5, 2, 1),
                       2, 0, 2)
@@ -367,8 +368,8 @@ def get_norm_log_prob(logits, raw_actions, scale, dist_type):
             print("    >>> nan in cov, clipped ratio value.")
             cov = torch.clamp(cov, 0., 3.0e38)
         action_batch = scale * torch.tanh(raw_actions)
-        assert (-1. <= torch.stack([action_batch / scale])).all() and (torch.stack([action_batch / scale <= 1.])).all(), \
-            "    >>> [get_norm_log_prob], action value error."
+        assert (-1. <= torch.stack([action_batch / scale])).all() and (
+            torch.stack([action_batch / scale <= 1.])).all(), "    >>> [get_norm_log_prob], action value error."
         log_prob = torch.log(1 / scale) - 2 * torch.log(1 - (action_batch / scale) ** 2 + 1e-6) \
                    + Normal(mean.double(), cov.double()).log_prob(raw_actions)
         # log_prob = torch.prod(log_prob, dim=1)[:, None]
