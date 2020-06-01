@@ -130,6 +130,9 @@ def log_policy_rollout(params, actor, env_name, video_name):
     while not done:
         action = actor.gen_action(torch.tensor(observation, dtype=torch.float32).cuda())[0]
         action_list.append(action)
+        action = action.cpu()
+        if type(env.action_space.sample()) is type(int(0)):
+            action = int(action)
         observation, reward, done, info = env.step(action)
         episode_reward += reward
         episode_length += 1

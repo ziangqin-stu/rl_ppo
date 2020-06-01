@@ -233,7 +233,7 @@ class ActorDiscreteFC(nn.Module):
         logits = self.forward(state)
         dist = Categorical(logits=logits)
         raw_action = dist.sample()
-        action = int(self.scale * raw_action)
+        action = (self.scale * raw_action).int()
         log_prob = get_norm_log_prob(logits, raw_action, self.scale, dist_type='Categorical')
         return action, log_prob, raw_action
 

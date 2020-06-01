@@ -52,6 +52,8 @@ Install necessary python packages:
 
 Run a simple experiment (cart pole) to check every thing going well:
 
+> go to ./base/
+>
 > ```python
 > python ppo.py --param_id=0
 > ```
@@ -119,7 +121,12 @@ You can see prompts in command line showing the loading and saving process works
 
 One of the simplest environment in classical control. Training converges quickly.
 
-`[missing training curve]`
+<div style="display:flex;">
+    <div style="display:flex; margin:auto;">
+        <img src=".\readme_data\image\demo_minigrid-cartpole_reward.png" alt="reward curve" width="400" style="padding: 5px;"/>
+        <img src=".\readme_data\image\demo_minigrid-cartpole_episode.png" alt="reward curve" width="400" style="padding: 5px;"/>
+    </div>
+</div>
 
 ### Continuous Environment:
 
@@ -259,7 +266,7 @@ Also, in DL algorithm implementation, if your learning curve is weird in some po
 
 1. Reproduce the error
 2. Try to think what cause the error
-3. Run related code segment to verify 2.
+3. Run related code snippets to verify 2.
 4. Debug and test, if bug fixed, done; else, go to 1.
 
 You need to follow this roughly in your debugging process. Otherwise, you are very likely to mess up the debugging. 

@@ -37,4 +37,4 @@ def test_env_nan(env_name, step):
         step -= 1
 
 
-test_env_nan('Humanoid-v2', 100)
+test_env_nan('CartPole-v1', 100)

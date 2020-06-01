@@ -9,10 +9,12 @@ import ray
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
+from data import envnames_minigrid
 from networks import get_norm_log_prob
 from rolloutmemory import RolloutMemory
-from utils import gen_env, gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
-    get_values, get_entropy, log_policy_rollout, logger_scalar, logger_histogram, save_model, test_rollout, ParallelEnv, AverageMeter
+from utils import gen_actor, gen_critic, get_dist_type, count_model_params, get_advantage, get_advantage_new, \
+    get_values, get_entropy, log_policy_rollout, logger_scalar, logger_histogram, save_model, test_rollout, ParallelEnv, \
+    AverageMeter
 
 
 def rollout_serial(rolloutmem, envs, actor, critic, params):
@@ -126,15 +128,20 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
     for step in range(params.policy_params.horizon):  # data shape: [env_num, data[:, ..., step_i]]
         # interact
         action, log_prob, raw_action = actor.gen_action(torch.Tensor(old_state).cuda())
-        assert (env_attributes['action_high'].cuda() >= action.cuda()).all() and (
-                action.cuda() >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
+        action = action.cuda()
+        assert (env_attributes['action_high'].cuda() >= action).all() and (
+                action >= env_attributes['action_low'].cuda()).all(), '>> Error: action value exceeds boundary!'
+        action = action.cpu()
+        if env_attributes['action_type']['data_type'] is type(int(0)) and not env_attributes['image_obs']:
+            action = action.int().tolist()
         step_obs_batch = ray.get(
-            [envs[i].step.remote(action[i].cpu()) for i in range(env_number)])  # new_obs, reward, done, info
+            [envs[i].step.remote(action[i]) for i in range(env_number)])  # new_obs, reward, done, info
         # parse interact results
         new_state = [step_obs[0] for step_obs in step_obs_batch]
         reward = [step_obs[1] for step_obs in step_obs_batch]
         done = [step_obs[2] for step_obs in step_obs_batch]
         # record parsed results
+        raw_action = raw_action[:, None] if len(raw_action.shape) < 2 else raw_action
         old_states.append(old_state)
         new_states.append(new_state)
         raw_actions.append(raw_action)
@@ -173,7 +180,7 @@ def parallel_rollout_env(rolloutmem, envs, actor, critic, params):
         advantages = get_advantage_new(gae_deltas, params.policy_params.discount, params.policy_params.lambd)[:,
                      None].detach().cuda()
         advantages = advantages[:first_done + 1]
-        advantages = (advantages - advantages.mean()) / torch.std(advantages)
+        advantages = (advantages - advantages.mean()) / torch.std(advantages + 1e-6)
         values = get_values(rewards[i][:first_done + 1], params.policy_params.discount)[:, None].cuda()
         # abandon redundant step info
 
@@ -306,7 +313,6 @@ def train(params):
     print("----------------------------------")
     time_start = time.time()
     for iteration in range(int(params.iter_num - iteration_pretrain)):
-        gc.collect()
         # collect rollouts from current policy
         rolloutmem.reset()
         iter_start_time = time.time()
@@ -319,8 +325,9 @@ def train(params):
             loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len = \
                 optimize_step(optimizer, rolloutmem, actor, critic, params, iteration)
         iter_end_time = time.time()
-        tb = logger_scalar(tb, iteration + iteration_pretrain, loss, policy_loss, critic_loss, entropy_loss, advantage, ratio, surr1, surr2, epochs_len, mean_iter_reward, time_start)
-        tb = logger_histogram(tb, iteration + iteration_pretrain, actor, critic)
+        tb = logger_scalar(tb, iteration + iteration_pretrain, loss, policy_loss, critic_loss, entropy_loss, advantage,
+                           ratio, surr1, surr2, epochs_len, mean_iter_reward, time_start)
+        # tb = logger_histogram(tb, iteration + iteration_pretrain, actor, critic)
         rollout_time.update(update_start_time - iter_start_time)
         update_time.update(iter_end_time - update_start_time)
         tb.add_scalar('rollout_time', rollout_time.val, iteration + iteration_pretrain)
@@ -328,16 +335,15 @@ def train(params):
         print('it {}: avgR: {:.3f} avgL: {:.3f} | rollout_time: {:.3f}sec update_time: {:.3f}sec'
               .format(iteration + iteration_pretrain, mean_iter_reward, epochs_len, rollout_time.val, update_time.val))
         # save rollout video
-        if (iteration + 1) % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
-            log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
+        # if (iteration + 1) % int(params.plotting_iters) == 0 and iteration > 0 and params.log_video:
+            # log_policy_rollout(params, actor, params.env_name, 'iter-{}'.format(iteration + iteration_pretrain))
         # save model
         if (iteration + 1) % int(params.checkpoint_iter) == 0 and iteration > 0 and params.save_checkpoint:
             save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
                        update_time)
-        test_rollout(params.env_name, actor, critic)
     # >> save rollout videos
     if params.log_video:
         save_model(params.prefix, iteration, iteration_pretrain, seed, actor, critic, optimizer, rollout_time,
                    update_time)
-        for i in range(3):
-            log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
+        # for i in range(3):
+            # log_policy_rollout(params, actor, params.env_name, 'final-{}'.format(i))
