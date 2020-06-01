@@ -28,11 +28,11 @@ People store policy rollouts from last iteration to calculate $Advantage_{\pi}$,
 
 PPO use a Actor-Critic style algorithm and do policy update as vanilla policy gradient method.
 
-![algorithm](.\readme_data\image\algorithm.png)
+![algorithm](./readme_data/image/algorithm.png)
 
 Based on precious instruction, the PPO code should be like this:
 
-![code_structure](.\readme_data\image\code_structure.png)
+![code_structure](./readme_data/image/code_structure.png)
 
 ## Getting Started
 
