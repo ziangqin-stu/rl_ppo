@@ -42,7 +42,7 @@ pycparser==2.20
 pyglet==1.5.0
 pyrsistent==0.16.0
 PyVirtualDisplay==0.2.5
-PyYAML==5.3.1
+PyYAML==5.4
 ray==0.8.5
 redis==3.4.1
 requests==2.23.0
