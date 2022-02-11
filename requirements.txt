@@ -34,7 +34,7 @@ multidict==4.7.6
 numpy==1.18.4
 oauthlib==3.1.0
 Pillow==7.1.2
-protobuf==3.12.1
+protobuf==3.15.0
 py-spy==0.3.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
